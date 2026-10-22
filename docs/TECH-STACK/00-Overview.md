@@ -4,39 +4,40 @@
 
 > **Versioning note**: Use the current stable/LTS release of each tool at implementation time rather than pinning to whatever was current when this doc was written — pin exact versions in `package.json`, not in prose that will drift.
 
-| Category | Technology | Why |
-|----------|------------|-----|
-| **Runtime** | Node.js (current LTS) | Modern, stable, performant |
-| **Package Manager** | pnpm (current stable) | Fast, efficient, workspace support |
-| **Language** | TypeScript (current stable) | Type safety, tooling, developer experience |
-| **API Framework** | Fastify (current stable) | Low overhead, schema-based validation built-in, plugin architecture |
-| **API Docs** | `@fastify/swagger` + `@fastify/swagger-ui` | OpenAPI spec + interactive docs generated from the same Zod schemas used for validation |
-| **Queue/Broker** | BullMQ (current stable) | Production-grade, Redis-based, rich features |
-| **Message Store** | Redis (current stable) | Fast, simple, pub/sub support |
-| **Database** | PostgreSQL (current stable) | Relational, durable, powerful |
-| **ORM** | Prisma (current stable) | Type-safe, migrations, DX — but treat PostgreSQL itself as the primary skill being demonstrated |
-| **Validation** | Zod (current stable) | Single source of truth: runtime validation + TS types + compiled JSON Schema |
-| **Auth** | Short-lived JWT access token + rotating refresh token | See [[API/01-Authentication]] — not "JWT in localStorage" |
-| **Password Hashing** | Argon2id | Winner of the Password Hashing Competition; resists GPU/ASIC cracking better than bcrypt |
-| **Real-time** | Socket.IO | Rooms, reconnection, fallback transport, ack support — justified over raw WebSocket by those needs |
-| **Logging** | Pino (current stable) | Structured logs, fast, JSON friendly (also Fastify's built-in logger) |
-| **Metrics** | Prometheus client (`prom-client`) | Counters/histograms for jobs, queue depth, HTTP latency |
-| **Tracing (optional)** | OpenTelemetry | Distributed traces across API → queue → worker; nice-to-have, not day-1 |
-| **Frontend** | Angular (current stable) | Batteries-included framework, strong TypeScript integration, standalone components |
-| **Styling** | Tailwind CSS (current stable) | Utility-first, rapid development |
-| **HTTP Client** | Angular HttpClient | Built-in, RxJS-based, interceptor support, no extra dependency |
-| **State Management** | RxJS + Angular Signals | Reactive streams, fine-grained reactivity, no extra library needed |
-| **Build Tool** | Angular CLI (esbuild) | Fast builds, integrated scaffolding |
-| **Unit/Integration Testing** | Vitest + Supertest/`fastify.inject()` | Jest-compatible, fast, ESM-native |
-| **E2E Testing** | Playwright | Real browser, drives the full login → submit → real-time-update flow |
-| **Containerization** | Docker | Reproducible builds |
-| **Orchestration** | Docker Compose | Local development |
+| Category                     | Technology                                            | Why                                                                                                |
+| ---------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Runtime**                  | Node.js (current LTS)                                 | Modern, stable, performant                                                                         |
+| **Package Manager**          | pnpm (current stable)                                 | Fast, efficient, workspace support                                                                 |
+| **Language**                 | TypeScript (current stable)                           | Type safety, tooling, developer experience                                                         |
+| **API Framework**            | Fastify (current stable)                              | Low overhead, schema-based validation built-in, plugin architecture                                |
+| **API Docs**                 | `@fastify/swagger` + `@fastify/swagger-ui`            | OpenAPI spec + interactive docs generated from the same Zod schemas used for validation            |
+| **Queue/Broker**             | BullMQ (current stable)                               | Production-grade, Redis-based, rich features                                                       |
+| **Message Store**            | Redis (current stable)                                | Fast, simple, pub/sub support                                                                      |
+| **Database**                 | PostgreSQL (current stable)                           | Relational, durable, powerful                                                                      |
+| **ORM**                      | Prisma (current stable)                               | Type-safe, migrations, DX — but treat PostgreSQL itself as the primary skill being demonstrated    |
+| **Validation**               | Zod (current stable)                                  | Single source of truth: runtime validation + TS types + compiled JSON Schema                       |
+| **Auth**                     | Short-lived JWT access token + rotating refresh token | See [[API/01-Authentication]] — not "JWT in localStorage"                                          |
+| **Password Hashing**         | Argon2id                                              | Winner of the Password Hashing Competition; resists GPU/ASIC cracking better than bcrypt           |
+| **Real-time**                | Socket.IO                                             | Rooms, reconnection, fallback transport, ack support — justified over raw WebSocket by those needs |
+| **Logging**                  | Pino (current stable)                                 | Structured logs, fast, JSON friendly (also Fastify's built-in logger)                              |
+| **Metrics**                  | Prometheus client (`prom-client`)                     | Counters/histograms for jobs, queue depth, HTTP latency                                            |
+| **Tracing (optional)**       | OpenTelemetry                                         | Distributed traces across API → queue → worker; nice-to-have, not day-1                            |
+| **Frontend**                 | Angular (current stable)                              | Batteries-included framework, strong TypeScript integration, standalone components                 |
+| **Styling**                  | Tailwind CSS (current stable)                         | Utility-first, rapid development                                                                   |
+| **HTTP Client**              | Angular HttpClient                                    | Built-in, RxJS-based, interceptor support, no extra dependency                                     |
+| **State Management**         | RxJS + Angular Signals                                | Reactive streams, fine-grained reactivity, no extra library needed                                 |
+| **Build Tool**               | Angular CLI (esbuild)                                 | Fast builds, integrated scaffolding                                                                |
+| **Unit/Integration Testing** | Vitest + Supertest/`fastify.inject()`                 | Jest-compatible, fast, ESM-native                                                                  |
+| **E2E Testing**              | Playwright                                            | Real browser, drives the full login → submit → real-time-update flow                               |
+| **Containerization**         | Docker                                                | Reproducible builds                                                                                |
+| **Orchestration**            | Docker Compose                                        | Local development                                                                                  |
 
 ## Tech Stack Decisions
 
 ### 1. Node.js + TypeScript
 
-**Why**: 
+**Why**:
+
 - Single language for backend + frontend + scripts
 - Type safety prevents bugs
 - Growing ecosystem
@@ -49,6 +50,7 @@
 ### 2. Fastify
 
 **Why**:
+
 - Very low overhead, one of the fastest Node.js frameworks
 - Built-in JSON schema validation (pairs with Zod via `fastify-type-provider-zod`)
 - Plugin architecture encourages encapsulation (`fastify.register`)
@@ -64,6 +66,7 @@
 ### 3. BullMQ + Redis
 
 **Why**:
+
 - BullMQ is production-grade wrapper around Redis
 - Redis is fast and simple to understand
 - Rich feature set (priorities, delays, retries)
@@ -78,6 +81,7 @@
 ### 4. PostgreSQL + Prisma
 
 **Why**:
+
 - PostgreSQL is powerful, standards-compliant
 - Prisma provides a type-safe ORM with automatic migrations and good DX
 
@@ -90,6 +94,7 @@
 ### 5. Zod as the Single Source of Truth
 
 **Why**:
+
 - Runtime validation (catches real-world issues)
 - TypeScript-first, composable schemas, good error messages
 
@@ -142,6 +147,7 @@ See [[TESTING/00-Strategy]] for the full breakdown and example E2E spec.
 ### 7. Angular + Tailwind
 
 **Why**:
+
 - Angular is a complete, opinionated framework (routing, DI, forms, HTTP client all built-in)
 - Standalone components (current Angular) reduce boilerplate vs. NgModules
 - RxJS is native to Angular — fits naturally with WebSocket event streams
@@ -155,6 +161,7 @@ See [[TESTING/00-Strategy]] for the full breakdown and example E2E spec.
 ### 8. Docker + Docker Compose
 
 **Why**:
+
 - Reproducible environments
 - Easy local development
 - Production-like setup
@@ -293,20 +300,20 @@ Feed those numbers into the `http_request_duration_seconds` and `job_processing_
 
 ## Security
 
-| Aspect | Implementation |
-|--------|-----------------|
-| **Authentication** | Short-lived (15 min) JWT access token + rotating refresh token with reuse detection — see [[API/01-Authentication]] |
-| **Refresh token storage** | HttpOnly, Secure, SameSite=Lax cookie (default recommendation — avoids exposing it to XSS via JS-readable storage) |
-| **Password** | Argon2id hashing |
-| **Authorization** | RBAC (admin/user roles) |
-| **Input Validation** | Zod schemas on all inputs (compiled to Fastify route schemas) |
-| **SQL Injection** | Prisma parameterized queries |
-| **XSS** | Angular sanitizes bindings by default (built-in DomSanitizer); refresh token never exposed to JS |
-| **CSRF** | Mitigated via `SameSite=Lax` on the refresh cookie + custom header requirement on state-changing requests |
-| **CORS** | Configured for dashboard origin (`@fastify/cors`) |
-| **Rate Limiting** | 1000 req/15min per IP globally; stricter limits on `/auth/login` and `/auth/refresh` (`@fastify/rate-limit`) |
-| **Token revocation** | Redis blacklist (access tokens) + DB-revoked refresh tokens, with reuse detection |
-| **HTTPS** | TLS termination (reverse proxy) |
+| Aspect                    | Implementation                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Authentication**        | Short-lived (15 min) JWT access token + rotating refresh token with reuse detection — see [[API/01-Authentication]] |
+| **Refresh token storage** | HttpOnly, Secure, SameSite=Lax cookie (default recommendation — avoids exposing it to XSS via JS-readable storage)  |
+| **Password**              | Argon2id hashing                                                                                                    |
+| **Authorization**         | RBAC (admin/user roles)                                                                                             |
+| **Input Validation**      | Zod schemas on all inputs (compiled to Fastify route schemas)                                                       |
+| **SQL Injection**         | Prisma parameterized queries                                                                                        |
+| **XSS**                   | Angular sanitizes bindings by default (built-in DomSanitizer); refresh token never exposed to JS                    |
+| **CSRF**                  | Mitigated via `SameSite=Lax` on the refresh cookie + custom header requirement on state-changing requests           |
+| **CORS**                  | Configured for dashboard origin (`@fastify/cors`)                                                                   |
+| **Rate Limiting**         | 1000 req/15min per IP globally; stricter limits on `/auth/login` and `/auth/refresh` (`@fastify/rate-limit`)        |
+| **Token revocation**      | Redis blacklist (access tokens) + DB-revoked refresh tokens, with reuse detection                                   |
+| **HTTPS**                 | TLS termination (reverse proxy)                                                                                     |
 
 ## Scaling
 

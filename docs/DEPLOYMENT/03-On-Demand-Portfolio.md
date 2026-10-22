@@ -11,7 +11,7 @@
 ```
 You're in active interview mode:
 ├─ Run live demos: ~5 hours
-├─ Portfolio reviews: ~3 hours  
+├─ Portfolio reviews: ~3 hours
 ├─ Each time: Spin up for 2-3 hours
 └─ Total active: ~5-10 hours/month
 
@@ -84,19 +84,19 @@ Average per month: ₹45/month
 
 ### Cost Per Instance (Monthly, No Free Tier)
 
-| Service | Instance | Monthly (720 hrs) | Paused | Notes |
-|---------|----------|------------------|--------|-------|
-| **EC2** | t3.micro | ₹550 | ₹0 | ✅ Pauseable |
-| **RDS** | db.t3.micro | ₹1,100 | ₹0 | ✅ Pauseable |
-| **ElastiCache** | cache.t3.micro | ₹1,022 | ₹0 | ✅ Pauseable |
-| **Storage (EBS)** | 20GB | ₹80 | ₹80 | Always charged |
-| **Storage (RDS)** | 20GB | ₹200 | ₹200 | Always charged |
-| **Backup storage** | ~5GB | ₹50 | ₹50 | Optional, can delete |
-| **Data transfer** | Out of AWS | ₹0-100 | ₹0 | Usually free |
-| **CloudWatch logs** | Basic | ₹50 | ₹50 | Minimal |
-| | | | |
-| **Total if running** | All | ₹3,052/month | - | ~₹4/hour |
-| **Total if paused** | All | - | ~₹410/month | Storage only |
+| Service              | Instance       | Monthly (720 hrs) | Paused      | Notes                |
+| -------------------- | -------------- | ----------------- | ----------- | -------------------- |
+| **EC2**              | t3.micro       | ₹550              | ₹0          | ✅ Pauseable         |
+| **RDS**              | db.t3.micro    | ₹1,100            | ₹0          | ✅ Pauseable         |
+| **ElastiCache**      | cache.t3.micro | ₹1,022            | ₹0          | ✅ Pauseable         |
+| **Storage (EBS)**    | 20GB           | ₹80               | ₹80         | Always charged       |
+| **Storage (RDS)**    | 20GB           | ₹200              | ₹200        | Always charged       |
+| **Backup storage**   | ~5GB           | ₹50               | ₹50         | Optional, can delete |
+| **Data transfer**    | Out of AWS     | ₹0-100            | ₹0          | Usually free         |
+| **CloudWatch logs**  | Basic          | ₹50               | ₹50         | Minimal              |
+|                      |                |                   |             |
+| **Total if running** | All            | ₹3,052/month      | -           | ~₹4/hour             |
+| **Total if paused**  | All            | -                 | ~₹410/month | Storage only         |
 
 ---
 
@@ -338,7 +338,7 @@ Active Interviewing (Interview scheduled):
 
 Per Interview Demo:
 ├─ Setup time: 0 (already done)
-├─ Run time: 1-2 hours  
+├─ Run time: 1-2 hours
 ├─ Cost: ₹4-7
 └─ Done: Pause
 
@@ -446,6 +446,7 @@ Cons:
 ### My Recommendation
 
 **AWS Option** is worth the cost because:
+
 - ₹100/month is basically free (cost of 1 coffee)
 - Shows real cloud experience
 - Professional impression on recruiters
@@ -457,6 +458,7 @@ Cons:
 ## Implementation Timeline
 
 ### Week 1: Setup
+
 - [ ] Create AWS account (5 mins)
 - [ ] Create EC2 instance (10 mins)
 - [ ] Create RDS database (10 mins)
@@ -466,6 +468,7 @@ Cons:
 - **Total: 1 hour**
 
 ### Week 2: Prepare
+
 - [ ] Create pause/resume scripts (15 mins)
 - [ ] Test pause/resume cycle (30 mins)
 - [ ] Prepare demo (30 mins)
@@ -473,6 +476,7 @@ Cons:
 - **Total: 1.5 hours**
 
 ### Ongoing: Interview Mode
+
 - [ ] Run resume script (2 mins)
 - [ ] Wait for services (5 mins)
 - [ ] Demo to recruiter (30 mins)
@@ -484,6 +488,7 @@ Cons:
 ## Cost Optimization Tips
 
 ### 1. Delete Unused Backups
+
 ```bash
 # RDS automatic backups can pile up
 # AWS Console → RDS → Automated backups
@@ -491,18 +496,21 @@ Cons:
 ```
 
 ### 2. Right-Size Instances
+
 ```bash
 # If traffic minimal, t3.micro is perfect
 # Don't upgrade unless needed
 ```
 
 ### 3. Disable CloudWatch Detailed Monitoring
+
 ```bash
 # AWS Console → CloudWatch → Detailed monitoring
 # Disable for portfolio (basic is free)
 ```
 
 ### 4. Use on-demand Pricing
+
 ```bash
 # Don't buy reserved instances (1-year commitment)
 # You pause often, so on-demand is cheaper

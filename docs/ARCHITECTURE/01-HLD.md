@@ -316,13 +316,13 @@ Solution:
 
 ## Trade-offs Made
 
-| Decision | Upside | Downside | Mitigation |
-|----------|--------|----------|-----------|
-| **Separate Processes** | Easy to scale, teaches patterns | More complex setup | Docker Compose simplifies |
-| **PostgreSQL + Redis** | Durable + fast | Dual database complexity | Prisma ORM helps |
-| **Eventually Consistent** | High performance | Harder to reason about | Audit trail for verification |
-| **Monorepo** | Code reuse, easy refactor | Single failure = all offline | Modular structure prevents this |
-| **Immutable History** | Compliance, debugging | Storage overhead | Partition old data |
+| Decision                  | Upside                          | Downside                     | Mitigation                      |
+| ------------------------- | ------------------------------- | ---------------------------- | ------------------------------- |
+| **Separate Processes**    | Easy to scale, teaches patterns | More complex setup           | Docker Compose simplifies       |
+| **PostgreSQL + Redis**    | Durable + fast                  | Dual database complexity     | Prisma ORM helps                |
+| **Eventually Consistent** | High performance                | Harder to reason about       | Audit trail for verification    |
+| **Monorepo**              | Code reuse, easy refactor       | Single failure = all offline | Modular structure prevents this |
+| **Immutable History**     | Compliance, debugging           | Storage overhead             | Partition old data              |
 
 ## Performance Characteristics
 

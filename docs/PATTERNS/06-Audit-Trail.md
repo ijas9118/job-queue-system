@@ -59,31 +59,31 @@ await db.jobExecutions.create({
   startedAt: new Date('2026-07-02T10:00:00Z'),
   completedAt: new Date('2026-07-02T10:00:02Z'),
   // Optional but helpful:
-  processingTime: 2300,  // Time actually executing
-  queueTime: 45         // Time waiting in queue
+  processingTime: 2300, // Time actually executing
+  queueTime: 45, // Time waiting in queue
 });
 ```
 
 ## Benefits
 
-| Benefit | How |
-|---------|-----|
-| **Debugging** | See entire history of attempts |
-| **Compliance** | Immutable record for audits |
-| **Replay** | Can reprocess from any point |
-| **Analytics** | Analyze failure patterns |
-| **Forensics** | What happened and when |
+| Benefit        | How                            |
+| -------------- | ------------------------------ |
+| **Debugging**  | See entire history of attempts |
+| **Compliance** | Immutable record for audits    |
+| **Replay**     | Can reprocess from any point   |
+| **Analytics**  | Analyze failure patterns       |
+| **Forensics**  | What happened and when         |
 
 ## Querying History
 
 ```sql
 -- See all attempts for a job
-SELECT * FROM job_executions 
-WHERE jobId = 'job-123' 
+SELECT * FROM job_executions
+WHERE jobId = 'job-123'
 ORDER BY attempt;
 
 -- Find jobs with consistent failures
-SELECT 
+SELECT
   jobId, type,
   COUNT(*) as attempts,
   COUNT(*) FILTER (WHERE status = 'failed') as failures
@@ -92,7 +92,7 @@ GROUP BY jobId, type
 HAVING COUNT(*) > 1 AND failures > 0;
 
 -- Average attempts by job type
-SELECT 
+SELECT
   j.type,
   AVG(je.attempt) as avg_attempts
 FROM job_executions je
@@ -107,17 +107,17 @@ GROUP BY j.type;
 describe('Audit Trail', () => {
   it('records every execution attempt', async () => {
     const jobId = 'job-123';
-    
+
     // Attempt 1
-    await processor.process(job);  // Fails
-    
+    await processor.process(job); // Fails
+
     // Attempt 2
-    await processor.process(job);  // Succeeds
-    
+    await processor.process(job); // Succeeds
+
     const executions = await db.jobExecutions.findMany({
-      where: { jobId }
+      where: { jobId },
     });
-    
+
     expect(executions).toHaveLength(2);
     expect(executions[0].status).toBe('failed');
     expect(executions[1].status).toBe('completed');
@@ -127,13 +127,13 @@ describe('Audit Trail', () => {
     const exec = await db.jobExecutions.create({
       jobId: 'job-123',
       attempt: 1,
-      status: 'failed'
+      status: 'failed',
     });
-    
+
     // Should not be able to update
     expect(async () => {
       await db.jobExecutions.update(exec.id, {
-        status: 'completed'  // Change result?
+        status: 'completed', // Change result?
       });
     }).toThrow();
   });

@@ -59,29 +59,29 @@ Retry request:  POST /jobs with idempotencyKey='stripe-evt-123'
 interface SubmitJobRequest {
   type: string;
   payload: object;
-  idempotencyKey?: string;  // Optional, generated if not provided
+  idempotencyKey?: string; // Optional, generated if not provided
   // ... other fields
 }
 
 async function submitJob(req: SubmitJobRequest) {
   const idempotencyKey = req.idempotencyKey || generateUUID();
-  
+
   // CHECK: Does this key already exist for this user?
   const existing = await db.jobs.findUnique({
     where: {
       idempotencyKey_userId: {
         idempotencyKey,
-        userId: req.user.id
-      }
-    }
+        userId: req.user.id,
+      },
+    },
   });
-  
+
   if (existing) {
     // KEY EXISTS: Return existing job (idempotent)
     logger.info('Idempotent retry detected', { idempotencyKey });
     return existing;
   }
-  
+
   // NEW REQUEST: Create job
   const job = await db.jobs.create({
     data: {
@@ -90,12 +90,12 @@ async function submitJob(req: SubmitJobRequest) {
       type: req.type,
       payload: req.payload,
       // ... other fields
-    }
+    },
   });
-  
+
   // Add to queue
   await queue.add(job.id, job.payload);
-  
+
   return job;
 }
 ```
@@ -104,7 +104,7 @@ async function submitJob(req: SubmitJobRequest) {
 
 ```sql
 -- Unique constraint ensures same key = same user = one job only
-CREATE UNIQUE INDEX idx_jobs_idempotency 
+CREATE UNIQUE INDEX idx_jobs_idempotency
 ON jobs(idempotencyKey, userId);
 
 -- Table structure
@@ -116,10 +116,10 @@ CREATE TABLE jobs (
   payload JSONB,
   status VARCHAR(50),
   -- ... other columns
-  
-  CONSTRAINT fk_jobs_userId 
+
+  CONSTRAINT fk_jobs_userId
     FOREIGN KEY (userId) REFERENCES users(id),
-  CONSTRAINT idx_jobs_idempotency_unique 
+  CONSTRAINT idx_jobs_idempotency_unique
     UNIQUE (idempotencyKey, userId)
 );
 ```
@@ -145,7 +145,7 @@ POST /webhooks/stripe
 // Our handler
 async function handleStripeWebhook(event) {
   const idempotencyKey = event.id;  // Use event ID as key
-  
+
   // Process payment succeeded event
   // If webhook retries with same event.id, we return existing job
   const job = await submitJob({
@@ -153,12 +153,13 @@ async function handleStripeWebhook(event) {
     payload: event.data,
     idempotencyKey
   });
-  
+
   return job;
 }
 ```
 
 **Result**:
+
 - 1st webhook: Creates job, sends email
 - 2nd webhook (retry with same evt_id): Returns existing job, no new email
 - User gets email once ✅
@@ -169,17 +170,17 @@ async function handleStripeWebhook(event) {
 // Frontend
 async function submitJob(jobData) {
   const idempotencyKey = generateUUID();
-  
+
   try {
     return await api.post('/jobs', {
       ...jobData,
-      idempotencyKey
+      idempotencyKey,
     });
   } catch (error) {
     // Network error, retry with same key
     return await api.post('/jobs', {
       ...jobData,
-      idempotencyKey  // Same key
+      idempotencyKey, // Same key
     });
     // → Returns existing job (idempotent)
   }
@@ -187,6 +188,7 @@ async function submitJob(jobData) {
 ```
 
 **Result**:
+
 - 1st attempt: Creates job
 - 2nd attempt (retry with same key): Returns same job
 - Job processed once ✅
@@ -204,7 +206,7 @@ UNIQUE (idempotencyKey, userId)
 ### 2. Optional Key
 
 ```typescript
-idempotencyKey || generateUUID()
+idempotencyKey || generateUUID();
 ```
 
 **Why**: Callers who don't care about idempotency get a unique key automatically.
@@ -215,12 +217,12 @@ idempotencyKey || generateUUID()
 
 ## Trade-offs
 
-| Pro | Con |
-|-----|-----|
-| Safe against duplicate processing | Must generate key on client side |
-| Works for any operation | Adds minor DB overhead (unique index) |
-| Simple to implement | Must document requirement clearly |
-| Works across retries & replays | Key collision edge case (extremely rare) |
+| Pro                               | Con                                      |
+| --------------------------------- | ---------------------------------------- |
+| Safe against duplicate processing | Must generate key on client side         |
+| Works for any operation           | Adds minor DB overhead (unique index)    |
+| Simple to implement               | Must document requirement clearly        |
+| Works across retries & replays    | Key collision edge case (extremely rare) |
 
 ## A Different Failure Mode: Idempotent Job Handlers
 
@@ -242,7 +244,7 @@ Handler runs again
 Did the side effect just happen TWICE? ❌
 ```
 
-The idempotency key on `jobs` only guarantees the job was *submitted* once. It says nothing about whether the *handler body* is safe to execute more than once for the same job — and BullMQ's at-least-once delivery means it will, eventually, run a handler twice for some job.
+The idempotency key on `jobs` only guarantees the job was _submitted_ once. It says nothing about whether the _handler body_ is safe to execute more than once for the same job — and BullMQ's at-least-once delivery means it will, eventually, run a handler twice for some job.
 
 ### Making the Handler Itself Safe to Re-run
 
@@ -253,10 +255,10 @@ async function chargeCardHandler(payload: ChargePayload, jobId: string) {
   // Check the execution log FIRST — did a previous attempt already succeed
   // even though the worker crashed before we could record it?
   const priorSuccess = await db.jobExecutions.findFirst({
-    where: { jobId, status: 'completed' }
+    where: { jobId, status: 'completed' },
   });
   if (priorSuccess) {
-    return priorSuccess.result;  // Already done — don't charge again
+    return priorSuccess.result; // Already done — don't charge again
   }
 
   // Pass the job's idempotency key through to the external system too.
@@ -273,12 +275,12 @@ async function chargeCardHandler(payload: ChargePayload, jobId: string) {
 
 Two layers, both needed:
 
-| Layer | Protects against | Mechanism |
-|-------|-------------------|-----------|
-| API / job submission | Duplicate **job rows** (double-click, webhook retry) | `UNIQUE (idempotencyKey, userId)` on `jobs` |
-| Job handler | Duplicate **side effects** (worker crash mid-processing, BullMQ retry) | Check prior execution result before acting; forward the idempotency key to the external API when it supports one |
+| Layer                | Protects against                                                       | Mechanism                                                                                                        |
+| -------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| API / job submission | Duplicate **job rows** (double-click, webhook retry)                   | `UNIQUE (idempotencyKey, userId)` on `jobs`                                                                      |
+| Job handler          | Duplicate **side effects** (worker crash mid-processing, BullMQ retry) | Check prior execution result before acting; forward the idempotency key to the external API when it supports one |
 
-For side effects with no external idempotency support (e.g. an internal email service with no dedup), the handler must record "in-progress" state transactionally *before* performing the effect, so a crash-and-retry can detect "was I already doing this?" rather than only "did I already finish?".
+For side effects with no external idempotency support (e.g. an internal email service with no dedup), the handler must record "in-progress" state transactionally _before_ performing the effect, so a crash-and-retry can detect "was I already doing this?" rather than only "did I already finish?".
 
 ## Related Patterns
 

@@ -14,12 +14,12 @@ reliability pattern, not to build media pipelines.
 
 We will build four handlers, each with a Zod payload schema and its own timeout:
 
-| Type | Shows | Local dependency |
-|------|-------|------------------|
-| send-email | External side effect; idempotency key forwarded; permanent vs retryable SMTP errors | Mailpit in Docker Compose |
-| deliver-webhook | HTTP retries, timeouts, 4xx permanent vs 5xx retryable | A small mock HTTP server with configurable failures |
-| generate-report | CPU-bound work, progress events, cancellation checkpoints | None |
-| flaky | Test handler that fails N times then succeeds, or always fails | None |
+| Type            | Shows                                                                               | Local dependency                                    |
+| --------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------- |
+| send-email      | External side effect; idempotency key forwarded; permanent vs retryable SMTP errors | Mailpit in Docker Compose                           |
+| deliver-webhook | HTTP retries, timeouts, 4xx permanent vs 5xx retryable                              | A small mock HTTP server with configurable failures |
+| generate-report | CPU-bound work, progress events, cancellation checkpoints                           | None                                                |
+| flaky           | Test handler that fails N times then succeeds, or always fails                      | None                                                |
 
 Job type decides the queue (`email`, `webhooks`, `reports`, `default`) on the
 server; clients do not choose a queue name.

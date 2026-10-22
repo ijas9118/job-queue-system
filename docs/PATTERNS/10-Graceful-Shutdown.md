@@ -65,7 +65,7 @@ async function startWorker() {
     if (isShuttingDown) {
       throw new Error('Worker shutting down');
     }
-    
+
     // Normal processing
     await handler.execute(job.payload);
   });
@@ -86,7 +86,7 @@ process.on('SIGTERM', async () => {
   server.close();
 
   // Step 2: Wait for in-flight requests (timeout: 10s)
-  await new Promise(resolve => setTimeout(resolve, 10000));
+  await new Promise((resolve) => setTimeout(resolve, 10000));
 
   // Step 3: Close database
   await db.$disconnect();
@@ -155,7 +155,7 @@ describe('Graceful Shutdown', () => {
     await sleep(2000);
 
     // Should have completed 2 jobs
-    expect(jobResults.filter(r => r === 'completed')).toHaveLength(2);
+    expect(jobResults.filter((r) => r === 'completed')).toHaveLength(2);
   });
 
   it('returns unfinished jobs to queue', async () => {
@@ -169,7 +169,7 @@ describe('Graceful Shutdown', () => {
     await worker.queue.add({ id: 1 });
 
     // Send shutdown with short timeout
-    worker.shutdown(1000);  // 1 second timeout
+    worker.shutdown(1000); // 1 second timeout
 
     await sleep(2000);
 
@@ -180,7 +180,7 @@ describe('Graceful Shutdown', () => {
 
   it('closes database connection', async () => {
     const worker = createTestWorker();
-    
+
     await worker.shutdown();
 
     // Should not be able to query
@@ -216,13 +216,13 @@ Result: Zero downtime, smooth transition
 spec:
   template:
     spec:
-      terminationGracePeriodSeconds: 40  # 40 second timeout
+      terminationGracePeriodSeconds: 40 # 40 second timeout
       containers:
-      - name: worker
-        lifecycle:
-          preStop:
-            exec:
-              command: ["/bin/sh", "-c", "sleep 5"]  # Drain connections
+        - name: worker
+          lifecycle:
+            preStop:
+              exec:
+                command: ['/bin/sh', '-c', 'sleep 5'] # Drain connections
 ```
 
 ## Related Documentation

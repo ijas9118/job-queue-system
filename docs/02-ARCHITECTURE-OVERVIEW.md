@@ -53,6 +53,7 @@
 **Purpose**: HTTP interface for users
 
 **Responsibilities**:
+
 - Accept job submissions
 - Authenticate users (JWT)
 - Query job status
@@ -60,6 +61,7 @@
 - Admin controls (queue stats, worker health)
 
 **Does NOT**:
+
 - Process jobs (workers do that)
 - Store state (everything in DB/Redis)
 
@@ -70,6 +72,7 @@
 **Purpose**: Execute jobs from the queue
 
 **Responsibilities**:
+
 - Listen to Redis queues
 - Execute job handlers
 - Implement retry logic
@@ -78,6 +81,7 @@
 - Emit events
 
 **Does NOT**:
+
 - Accept user input
 - Make architecture decisions
 
@@ -88,6 +92,7 @@
 **Purpose**: Visual job monitoring interface
 
 **Responsibilities**:
+
 - Display job status
 - Show worker health
 - Real-time updates (WebSocket)
@@ -95,6 +100,7 @@
 - Admin controls
 
 **Does NOT**:
+
 - Store state
 - Directly access Redis
 
@@ -268,6 +274,7 @@ See [[ARCHITECTURE/02-Monorepo-Structure]] for full structure and the package gr
 **Chosen**: Separate processes (API and Worker)
 
 **Why**:
+
 - Teaches distributed patterns
 - Workers can't block API
 - Easy to scale workers independently
@@ -280,6 +287,7 @@ See [[PATTERNS/05-Concurrency-Backpressure]] for backpressure details.
 **Chosen**: Hybrid approach
 
 **Why**:
+
 - Redis is fast for active queue state
 - PostgreSQL is durable for history
 - If Redis crashes, can rebuild from DB
@@ -292,6 +300,7 @@ See [[PATTERNS/07-Redis-vs-PostgreSQL]] for details.
 **Chosen**: Monorepo with shared packages
 
 **Why**:
+
 - Single codebase to understand
 - Easy to refactor across boundaries
 - Shared types (Zod schemas)
@@ -304,6 +313,7 @@ See [[ARCHITECTURE/02-Monorepo-Structure]] for details.
 There's no fixed formula mapping job volume to instance counts — that depends on what's actually CPU vs I/O bound in the handlers, DB connection limits, and box sizes. Determine it empirically via load testing (RPS, p95/p99 latency, CPU/memory, DB pool saturation, queue depth — see [[TECH-STACK/00-Overview]]#scaling) rather than guessing a table upfront.
 
 Directionally:
+
 - **API** is I/O-bound (mostly waiting on DB/Redis) → scales horizontally behind a load balancer
 - **Worker** is the CPU/IO-bound component → scales by adding instances and/or raising `WORKER_CONCURRENCY`
 - **Redis** and **PostgreSQL** are usually the last things that need scaling (replication/Sentinel/sharding), and only once actually measured as the bottleneck

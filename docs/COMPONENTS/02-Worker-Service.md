@@ -140,54 +140,53 @@ apps/worker/
 // pseudo-code
 async function startWorker() {
   const queue = new JobQueue();
-  
+
   // Listen for jobs
   queue.process(CONCURRENCY, async (job) => {
     try {
       // Step 1: Log start
       logger.info('Processing job', { jobId: job.id });
-      
+
       // Step 2: Fetch job details
       const jobData = await db.jobs.findUnique(job.id);
-      
+
       // Step 3: Check idempotency
-      const lastExecution = await db.jobExecutions
-        .findLast({ jobId: job.id });
+      const lastExecution = await db.jobExecutions.findLast({ jobId: job.id });
       if (lastExecution?.status === 'completed') {
         logger.info('Job already completed, using cached result');
         return lastExecution.result;
       }
-      
+
       // Step 4: Get handler
       const handler = handlers.get(jobData.type);
-      
+
       // Step 5: Execute
       const startTime = Date.now();
       const result = await handler.execute(jobData.payload);
       const duration = Date.now() - startTime;
-      
+
       // Step 6: Store result
       await db.jobExecutions.create({
         jobId: job.id,
         status: 'completed',
         result,
-        duration
+        duration,
       });
-      
+
       await db.jobs.update(job.id, {
         status: 'completed',
-        completedAt: new Date()
+        completedAt: new Date(),
       });
-      
+
       // Step 7: Emit event
       events.emit('job:completed', { jobId: job.id, result });
-      
+
       return result;
     } catch (error) {
       // Handle error...
     }
   });
-  
+
   // Graceful shutdown
   process.on('SIGTERM', () => queue.close());
 }
@@ -197,10 +196,10 @@ async function startWorker() {
 
 ```typescript
 interface JobHandler<T extends object = any, R = any> {
-  type: string;              // 'send-email', etc.
-  schema: ZodSchema;         // Validates payload
-  timeout?: number;          // Milliseconds (default: 30000)
-  maxRetries?: number;       // Override default
+  type: string; // 'send-email', etc.
+  schema: ZodSchema; // Validates payload
+  timeout?: number; // Milliseconds (default: 30000)
+  maxRetries?: number; // Override default
   execute(payload: T): Promise<R>;
 }
 ```
@@ -215,7 +214,7 @@ export const sendEmailPayloadSchema = z.object({
   to: z.string().email(),
   subject: z.string(),
   template: z.string(),
-  context: z.object({}).optional()
+  context: z.object({}).optional(),
 });
 
 export const sendEmailHandler: JobHandler = {
@@ -223,23 +222,23 @@ export const sendEmailHandler: JobHandler = {
   schema: sendEmailPayloadSchema,
   timeout: 10000,
   maxRetries: 5,
-  
+
   async execute(payload: typeof sendEmailPayloadSchema._type) {
     logger.info('Sending email', { to: payload.to });
-    
+
     // Call email service
     const result = await emailService.send({
       to: payload.to,
       subject: payload.subject,
       template: payload.template,
-      context: payload.context
+      context: payload.context,
     });
-    
+
     return {
       messageId: result.id,
-      sentAt: new Date()
+      sentAt: new Date(),
     };
-  }
+  },
 };
 ```
 
@@ -251,12 +250,12 @@ export const sendEmailHandler: JobHandler = {
 function calculateBackoff(attemptNumber: number): number {
   // Base delay: 2^attemptNumber seconds
   const baseDelay = Math.pow(2, attemptNumber) * 1000;
-  
+
   // Add random jitter (±20%)
   const jitter = baseDelay * (Math.random() - 0.5) * 0.4;
-  
+
   return baseDelay + jitter;
-  
+
   // Examples:
   // Attempt 0: ~1s (1000ms)
   // Attempt 1: ~4s (4000ms)
@@ -270,23 +269,23 @@ function calculateBackoff(attemptNumber: number): number {
 ```typescript
 async function handleJobFailure(job, error) {
   const { retryCount, maxRetries } = job;
-  
+
   if (retryCount < maxRetries) {
     // Schedule retry
     const delay = calculateBackoff(retryCount);
-    
+
     await db.jobs.update(job.id, {
       status: 'delayed',
       delayUntil: new Date(Date.now() + delay),
-      retryCount: retryCount + 1
+      retryCount: retryCount + 1,
     });
-    
+
     await queue.scheduleRetry(job.id, delay);
-    
+
     logger.info('Job scheduled for retry', {
       jobId: job.id,
       attempt: retryCount + 1,
-      delayMs: delay
+      delayMs: delay,
     });
   } else {
     // Max retries exhausted
@@ -300,7 +299,7 @@ async function handleJobFailure(job, error) {
 
 ```typescript
 // Each worker processes jobs concurrently
-const CONCURRENCY = 5;  // Jobs per worker instance
+const CONCURRENCY = 5; // Jobs per worker instance
 
 queue.process(CONCURRENCY, async (job) => {
   // Process job
@@ -327,17 +326,17 @@ When worker receives SIGTERM signal:
 ```typescript
 process.on('SIGTERM', async () => {
   logger.info('Graceful shutdown started');
-  
+
   // Step 1: Stop accepting new jobs
   queue.pause();
-  
+
   // Step 2: Wait for current jobs (timeout: 30s)
   const timeout = 30000;
   await queue.close(timeout);
-  
+
   // Step 3: Close database connection
   await db.$disconnect();
-  
+
   // Step 4: Exit
   logger.info('Graceful shutdown complete');
   process.exit(0);
@@ -345,6 +344,7 @@ process.on('SIGTERM', async () => {
 ```
 
 Benefits:
+
 - Current jobs complete or timeout
 - In-flight work doesn't hang
 - State is consistent (jobs in DB)
@@ -362,12 +362,12 @@ try {
   await db.jobExecutions.create({
     jobId: job.id,
     status: 'failed',
-    errorType: error.constructor.name,      // 'TypeError', 'NetworkError'
-    errorMessage: error.message,            // 'Connection timeout'
-    errorStack: error.stack,                // Full stack trace
-    duration: Date.now() - startTime
+    errorType: error.constructor.name, // 'TypeError', 'NetworkError'
+    errorMessage: error.message, // 'Connection timeout'
+    errorStack: error.stack, // Full stack trace
+    duration: Date.now() - startTime,
   });
-  
+
   // Decide: retry or DLQ
   if (retryCount < maxRetries) {
     // Retry with backoff
@@ -383,16 +383,16 @@ Prevents duplicate processing if job retried:
 
 ```typescript
 // Before processing, check if already succeeded
-const lastExecution = await db.jobExecutions
-  .findLast({ jobId: job.id, status: 'completed' });
+const lastExecution = await db.jobExecutions.findLast({ jobId: job.id, status: 'completed' });
 
 if (lastExecution) {
   logger.info('Job already completed, skipping', { jobId: job.id });
-  return lastExecution.result;  // Return cached result
+  return lastExecution.result; // Return cached result
 }
 ```
 
 Critical for:
+
 - Retries (don't send email twice)
 - Worker crashes (lost in-flight work)
 - Duplicate queue entries
@@ -452,20 +452,20 @@ describe('sendEmailHandler', () => {
     const payload = {
       to: 'user@example.com',
       subject: 'Test',
-      template: 'welcome'
+      template: 'welcome',
     };
-    
+
     const result = await sendEmailHandler.execute(payload);
-    
+
     expect(result.messageId).toBeDefined();
   });
-  
+
   it('throws on invalid email', async () => {
     expect(() => {
       sendEmailHandler.execute({
         to: 'not-an-email',
         subject: 'Test',
-        template: 'welcome'
+        template: 'welcome',
       });
     }).toThrow();
   });
@@ -481,23 +481,23 @@ describe('Job Processor', () => {
   it('processes job and stores result', async () => {
     const job = await queue.add('send-email', {
       to: 'user@example.com',
-      subject: 'Test'
+      subject: 'Test',
     });
-    
+
     await processor.process(job);
-    
+
     const execution = await db.jobExecutions.findLast(job.id);
     expect(execution.status).toBe('completed');
   });
-  
+
   it('retries on failure', async () => {
     // Mock handler to fail first time
     handlers.get('test-job').execute = () => {
       throw new Error('Temporary failure');
     };
-    
+
     await processor.process(job);
-    
+
     expect(job.retryCount).toBe(1);
   });
 });
@@ -528,13 +528,13 @@ GRACEFUL_SHUTDOWN_TIMEOUT=30000 # Milliseconds
 
 ## Performance Characteristics
 
-| Metric | Value | Notes |
-|--------|-------|-------|
-| **Job Processing** | ~100ms-5s | Depends on handler |
-| **Concurrency** | 5-10 jobs | Per worker instance |
-| **Throughput** | ~500 jobs/min | With 100 workers |
-| **Memory** | ~200MB | Per worker instance |
-| **Startup Time** | ~2s | Connect to Redis/DB |
+| Metric             | Value         | Notes               |
+| ------------------ | ------------- | ------------------- |
+| **Job Processing** | ~100ms-5s     | Depends on handler  |
+| **Concurrency**    | 5-10 jobs     | Per worker instance |
+| **Throughput**     | ~500 jobs/min | With 100 workers    |
+| **Memory**         | ~200MB        | Per worker instance |
+| **Startup Time**   | ~2s           | Connect to Redis/DB |
 
 ## Development
 

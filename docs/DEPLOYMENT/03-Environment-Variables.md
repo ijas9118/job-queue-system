@@ -6,25 +6,25 @@ All environment variables for every service in the monorepo. Copy `.env.example`
 
 ## Quick Reference
 
-| Variable | Service | Required | Default |
-|----------|---------|----------|---------|
-| `DATABASE_URL` | API, Worker | Yes | — |
-| `REDIS_URL` | API, Worker | Yes | — |
-| `JWT_SECRET` | API | Yes | — |
-| `NODE_ENV` | All | Yes | `development` |
-| `API_PORT` | API | No | `3000` |
-| `JWT_ACCESS_EXPIRY` | API | No | `900` |
-| `JWT_REFRESH_EXPIRY` | API | No | `604800` |
-| `ARGON2_MEMORY_COST` | API | No | `19456` (19 MiB) |
-| `ARGON2_TIME_COST` | API | No | `2` |
-| `ARGON2_PARALLELISM` | API | No | `1` |
-| `RATE_LIMIT_MAX_REQUESTS` | API | No | `1000` |
-| `RATE_LIMIT_WINDOW` | API | No | `900` |
-| `WS_CORS_ORIGIN` | API | No | `http://localhost:3001` |
-| `LOG_LEVEL` | API, Worker | No | `info` |
-| `WORKER_CONCURRENCY` | Worker | No | `5` |
-| `WORKER_HEARTBEAT_TIMEOUT_MS` | API, Worker | No | `60000` |
-| `GRACEFUL_SHUTDOWN_TIMEOUT` | Worker | No | `30000` |
+| Variable                      | Service     | Required | Default                 |
+| ----------------------------- | ----------- | -------- | ----------------------- |
+| `DATABASE_URL`                | API, Worker | Yes      | —                       |
+| `REDIS_URL`                   | API, Worker | Yes      | —                       |
+| `JWT_SECRET`                  | API         | Yes      | —                       |
+| `NODE_ENV`                    | All         | Yes      | `development`           |
+| `API_PORT`                    | API         | No       | `3000`                  |
+| `JWT_ACCESS_EXPIRY`           | API         | No       | `900`                   |
+| `JWT_REFRESH_EXPIRY`          | API         | No       | `604800`                |
+| `ARGON2_MEMORY_COST`          | API         | No       | `19456` (19 MiB)        |
+| `ARGON2_TIME_COST`            | API         | No       | `2`                     |
+| `ARGON2_PARALLELISM`          | API         | No       | `1`                     |
+| `RATE_LIMIT_MAX_REQUESTS`     | API         | No       | `1000`                  |
+| `RATE_LIMIT_WINDOW`           | API         | No       | `900`                   |
+| `WS_CORS_ORIGIN`              | API         | No       | `http://localhost:3001` |
+| `LOG_LEVEL`                   | API, Worker | No       | `info`                  |
+| `WORKER_CONCURRENCY`          | Worker      | No       | `5`                     |
+| `WORKER_HEARTBEAT_TIMEOUT_MS` | API, Worker | No       | `60000`                 |
+| `GRACEFUL_SHUTDOWN_TIMEOUT`   | Worker      | No       | `30000`                 |
 
 > **Dashboard config is not env vars.** Angular bakes `apiUrl`/`wsUrl` into the build via `src/environments/environment.ts` (dev) and `environment.prod.ts` (prod) — see the Angular Frontend section below.
 
@@ -165,11 +165,11 @@ The worker sends a heartbeat at half this interval (`WORKER_HEARTBEAT_TIMEOUT_MS
 
 Controls log verbosity. Accepted values: `error`, `warn`, `info`, `debug`.
 
-| Level | Use in |
-|-------|--------|
-| `error` | Production — only errors and critical events |
-| `warn` | Staging — errors + warnings |
-| `info` | Default — errors, warnings, and request lifecycle |
+| Level   | Use in                                            |
+| ------- | ------------------------------------------------- |
+| `error` | Production — only errors and critical events      |
+| `warn`  | Staging — errors + warnings                       |
+| `info`  | Default — errors, warnings, and request lifecycle |
 | `debug` | Local development — verbose, includes SQL queries |
 
 Never use `debug` in production — it logs request payloads and can leak sensitive data.
@@ -204,6 +204,7 @@ How many jobs this worker instance processes in parallel. Default `5`.
 Higher concurrency increases throughput but also memory and CPU usage. Each worker instance is independent — running 3 workers with `WORKER_CONCURRENCY=5` gives an effective concurrency of 15.
 
 Tune based on job type:
+
 - I/O-bound jobs (SMTP, HTTP calls): higher concurrency (10–20) is fine
 - CPU-bound jobs (image processing, encryption): keep at or below CPU core count
 
@@ -229,7 +230,7 @@ Angular doesn't read `.env` files at runtime — configuration is baked in per b
 // src/environments/environment.ts
 export const environment = {
   apiUrl: 'http://localhost:3000/api/v1',
-  wsUrl: 'http://localhost:3000'
+  wsUrl: 'http://localhost:3000',
 };
 ```
 
@@ -243,10 +244,10 @@ Base URL for all REST API calls. The dashboard appends endpoint paths to this.
 
 ```typescript
 // Local
-apiUrl: 'http://localhost:3000/api/v1'
+apiUrl: 'http://localhost:3000/api/v1';
 
 // Production
-apiUrl: 'https://api.yourdomain.com/api/v1'
+apiUrl: 'https://api.yourdomain.com/api/v1';
 ```
 
 ---
@@ -257,10 +258,10 @@ Socket.IO server URL. Points to the same host as the API — Socket.IO is mounte
 
 ```typescript
 // Local
-wsUrl: 'http://localhost:3000'
+wsUrl: 'http://localhost:3000';
 
 // Production
-wsUrl: 'https://api.yourdomain.com'
+wsUrl: 'https://api.yourdomain.com';
 ```
 
 ---
@@ -288,21 +289,21 @@ The API and Worker should validate required env vars at startup and exit with a 
 import { z } from 'zod';
 
 const schema = z.object({
-  DATABASE_URL:               z.string().url(),
-  REDIS_URL:                  z.string().url(),
-  JWT_SECRET:                 z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-  NODE_ENV:                   z.enum(['development', 'test', 'production']).default('development'),
-  API_PORT:                   z.coerce.number().default(3000),
-  JWT_ACCESS_EXPIRY:          z.coerce.number().default(900),
-  JWT_REFRESH_EXPIRY:         z.coerce.number().default(604800),
-  ARGON2_MEMORY_COST:         z.coerce.number().min(19456).default(19456),
-  ARGON2_TIME_COST:           z.coerce.number().min(2).default(2),
-  ARGON2_PARALLELISM:         z.coerce.number().default(1),
-  WS_CORS_ORIGIN:             z.string().default('http://localhost:3001'),
-  RATE_LIMIT_MAX_REQUESTS:    z.coerce.number().default(1000),
-  RATE_LIMIT_WINDOW:          z.coerce.number().default(900),
-  WORKER_HEARTBEAT_TIMEOUT_MS:z.coerce.number().default(60000),
-  LOG_LEVEL:                  z.enum(['error', 'warn', 'info', 'debug']).default('info'),
+  DATABASE_URL: z.string().url(),
+  REDIS_URL: z.string().url(),
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  API_PORT: z.coerce.number().default(3000),
+  JWT_ACCESS_EXPIRY: z.coerce.number().default(900),
+  JWT_REFRESH_EXPIRY: z.coerce.number().default(604800),
+  ARGON2_MEMORY_COST: z.coerce.number().min(19456).default(19456),
+  ARGON2_TIME_COST: z.coerce.number().min(2).default(2),
+  ARGON2_PARALLELISM: z.coerce.number().default(1),
+  WS_CORS_ORIGIN: z.string().default('http://localhost:3001'),
+  RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(1000),
+  RATE_LIMIT_WINDOW: z.coerce.number().default(900),
+  WORKER_HEARTBEAT_TIMEOUT_MS: z.coerce.number().default(60000),
+  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
 });
 
 const result = schema.safeParse(process.env);

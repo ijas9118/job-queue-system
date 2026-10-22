@@ -21,13 +21,13 @@ Stateless JWT-based authentication with rotating refresh tokens and Redis-backed
 ```typescript
 interface AccessTokenPayload {
   // Standard JWT claims
-  sub: string;       // User UUID — primary identifier ("subject")
-  iat: number;       // Issued at (Unix timestamp)
-  exp: number;       // Expires at (Unix timestamp, iat + 900)
-  jti: string;       // JWT ID — unique per token (UUID), used for blacklisting
+  sub: string; // User UUID — primary identifier ("subject")
+  iat: number; // Issued at (Unix timestamp)
+  exp: number; // Expires at (Unix timestamp, iat + 900)
+  jti: string; // JWT ID — unique per token (UUID), used for blacklisting
 
   // Application claims
-  email: string;     // User email
+  email: string; // User email
   role: 'admin' | 'user';
   status: 'active' | 'suspended' | 'archived';
 }
@@ -49,10 +49,10 @@ interface AccessTokenPayload {
 
 ### Expiry
 
-| Token | TTL | Rationale |
-|-------|-----|-----------|
-| Access Token | **15 minutes** | Short window limits damage if stolen |
-| Refresh Token | **7 days** | Balance between UX and security |
+| Token         | TTL            | Rationale                            |
+| ------------- | -------------- | ------------------------------------ |
+| Access Token  | **15 minutes** | Short window limits damage if stolen |
+| Refresh Token | **7 days**     | Balance between UX and security      |
 
 ### Why `jti` (JWT ID)?
 
@@ -240,6 +240,7 @@ Each use of a refresh token issues a new one and revokes the old. If someone ste
 ### Reuse Detection
 
 If an already-revoked refresh token is presented, it means one of two things:
+
 - The token was stolen and the attacker used it after the legitimate user already rotated it
 - The legitimate user is replaying an old token (bug in client)
 
@@ -265,7 +266,7 @@ User must authenticate with email + password
 
 ```typescript
 const existing = await db.refreshTokens.findUnique({
-  where: { tokenHash: sha256(receivedToken) }
+  where: { tokenHash: sha256(receivedToken) },
 });
 
 if (!existing) {
@@ -276,10 +277,10 @@ if (existing.revokedAt !== null) {
   // Reuse detected — revoke everything for this user
   await db.refreshTokens.updateMany({
     where: { userId: existing.userId, revokedAt: null },
-    data: { revokedAt: new Date() }
+    data: { revokedAt: new Date() },
   });
   await db.auditLog.create({
-    data: { userId: existing.userId, action: 'refresh_token_reuse_detected' }
+    data: { userId: existing.userId, action: 'refresh_token_reuse_detected' },
   });
   return res.status(401).json({ error: { code: 'SESSION_COMPROMISED' } });
 }
@@ -317,7 +318,7 @@ await redis.setEx(`blacklist:${payload.jti}`, remainingTtl, '1');
 const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 await db.refreshTokens.update({
   where: { tokenHash },
-  data: { revokedAt: new Date() }
+  data: { revokedAt: new Date() },
 });
 ```
 
@@ -352,11 +353,11 @@ await redis.setEx(`blacklist:${payload.jti}`, remainingTtl, '1');
 // Revoke every active refresh token for this user
 await db.refreshTokens.updateMany({
   where: { userId: payload.sub, revokedAt: null },
-  data: { revokedAt: new Date() }
+  data: { revokedAt: new Date() },
 });
 
 await db.auditLog.create({
-  data: { userId: payload.sub, action: 'user_logout_all' }
+  data: { userId: payload.sub, action: 'user_logout_all' },
 });
 
 res.status(204).send();
@@ -370,14 +371,14 @@ res.status(204).send();
 
 ### When Tokens Are Blacklisted
 
-| Trigger | Blacklists |
-|---------|-----------|
-| Logout | Current access token + current refresh token |
-| Logout all | Current access token + all refresh tokens for user |
-| Password change | All refresh tokens for user |
-| Account suspended by admin | All refresh tokens for user + flag in Redis |
-| Admin force-logout (by sessionId) | Specific refresh token |
-| Refresh token reuse detected | All refresh tokens for user |
+| Trigger                           | Blacklists                                         |
+| --------------------------------- | -------------------------------------------------- |
+| Logout                            | Current access token + current refresh token       |
+| Logout all                        | Current access token + all refresh tokens for user |
+| Password change                   | All refresh tokens for user                        |
+| Account suspended by admin        | All refresh tokens for user + flag in Redis        |
+| Admin force-logout (by sessionId) | Specific refresh token                             |
+| Refresh token reuse detected      | All refresh tokens for user                        |
 
 ### Redis Key Pattern
 
@@ -395,13 +396,13 @@ When an admin suspends a user:
 // 1. Update DB
 await db.users.update({
   where: { id: userId },
-  data: { status: 'suspended' }
+  data: { status: 'suspended' },
 });
 
 // 2. Revoke all refresh tokens
 await db.refreshTokens.updateMany({
   where: { userId, revokedAt: null },
-  data: { revokedAt: new Date() }
+  data: { revokedAt: new Date() },
 });
 
 // 3. Set a short-lived suspension flag in Redis
@@ -410,7 +411,7 @@ await db.refreshTokens.updateMany({
 
 // 4. Audit log
 await db.auditLog.create({
-  data: { userId: adminId, action: 'user_suspended', resourceId: userId }
+  data: { userId: adminId, action: 'user_suspended', resourceId: userId },
 });
 ```
 
@@ -464,8 +465,8 @@ await db.refreshTokens.create({
     deviceName: parseUserAgent(req.headers['user-agent']),
     userAgent: req.headers['user-agent'],
     ipAddress: req.ip,
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-  }
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  },
 });
 
 // Lookup on refresh/logout
@@ -543,11 +544,11 @@ The access token still travels in the `Authorization` header. Only the refresh t
 
 ```typescript
 res.cookie('refreshToken', rawToken, {
-  httpOnly: true,      // not accessible via document.cookie
-  secure: true,        // HTTPS only
-  sameSite: 'lax',     // sent on top-level navigation, not cross-site POSTs
-  path: '/api/v1/auth/refresh',  // scoped — only sent to the refresh endpoint
-  maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days in ms
+  httpOnly: true, // not accessible via document.cookie
+  secure: true, // HTTPS only
+  sameSite: 'lax', // sent on top-level navigation, not cross-site POSTs
+  path: '/api/v1/auth/refresh', // scoped — only sent to the refresh endpoint
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
 });
 ```
 
@@ -563,12 +564,12 @@ On logout, clear the cookie:
 res.clearCookie('refreshToken', { path: '/api/v1/auth/refresh' });
 ```
 
-| | JSON body | HttpOnly Cookie |
-|---|---|---|
-| XSS protection | No | Yes |
-| Works for mobile/CLI | Yes | Awkward |
-| CSRF risk | No | Yes (mitigate with `SameSite=Lax` + CSRF token) |
-| Implementation effort | Low | Medium |
+|                       | JSON body | HttpOnly Cookie                                 |
+| --------------------- | --------- | ----------------------------------------------- |
+| XSS protection        | No        | Yes                                             |
+| Works for mobile/CLI  | Yes       | Awkward                                         |
+| CSRF risk             | No        | Yes (mitigate with `SameSite=Lax` + CSRF token) |
+| Implementation effort | Low       | Medium                                          |
 
 **Recommendation for this project: Option B (HttpOnly Cookie).** The dashboard is a browser-based SPA, and a refresh token sitting in `localStorage`/`sessionStorage` is readable by any injected script — one XSS bug anywhere in the dependency tree becomes a full session-theft bug with a 7-day blast radius. The access token still lives in memory only on the client (never persisted), which caps the damage of a stolen access token to its 15-minute lifetime. Mitigate the added CSRF surface with `SameSite=Lax` (already scoped to `/api/v1/auth/refresh`) plus a custom header requirement (e.g. `X-Requested-With`) on state-changing requests, since CSRF can't set custom headers cross-origin. Reserve the JSON-body option for non-browser clients (mobile apps, CLI, service-to-service) where there's no cookie jar and no XSS surface to defend against.
 
@@ -600,7 +601,7 @@ Schedule via BullMQ repeatable job:
 await queue.add(
   'cleanup-expired-tokens',
   {},
-  { repeat: { pattern: '0 3 * * *' } }  // 3am daily
+  { repeat: { pattern: '0 3 * * *' } } // 3am daily
 );
 ```
 
@@ -636,21 +637,21 @@ POST /auth/logout   → global rate limit (already authenticated)
 
 ## Security Decisions
 
-| Decision              | Choice                                    | Why                                                                              |
-| --------------------- | ----------------------------------------- | -------------------------------------------------------------------------------- |
-| JWT algorithm         | HS256 with `algorithms: ['HS256']` locked | Prevents algorithm confusion attacks (`alg: none`, RS256 abuse)                  |
-| Access token TTL      | 15 min                                    | Short window limits damage if token is stolen                                    |
-| Refresh token type    | Opaque random UUID                        | Can be revoked in DB; JWT refresh tokens can't be invalidated                    |
-| Refresh token storage | SHA256(token) hash only                   | DB leak doesn't expose usable tokens — same principle as password hashing        |
-| Refresh token hashing | SHA256 (not bcrypt)                       | Tokens are already 128-bit random — no brute-force surface; SHA256 is sufficient |
-| Refresh rotation      | Yes, with reuse detection                 | Reused revoked token → revoke all sessions for that user                         |
-| Blacklist store       | Redis string keys                         | O(1) lookup, auto-expiry via TTL, no DB hit on every request                     |
-| Refresh token cookie  | HttpOnly + Secure + SameSite=Lax          | Prevents XSS access; scoped to refresh path only                                 |
-| Claims in token       | Minimal                                   | `sub`, `role`, `email`, `status`, `jti` — avoids stale data                      |
-| Login error message   | Generic                                   | "Invalid email or password" — prevents user enumeration                          |
+| Decision              | Choice                                    | Why                                                                                    |
+| --------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------- |
+| JWT algorithm         | HS256 with `algorithms: ['HS256']` locked | Prevents algorithm confusion attacks (`alg: none`, RS256 abuse)                        |
+| Access token TTL      | 15 min                                    | Short window limits damage if token is stolen                                          |
+| Refresh token type    | Opaque random UUID                        | Can be revoked in DB; JWT refresh tokens can't be invalidated                          |
+| Refresh token storage | SHA256(token) hash only                   | DB leak doesn't expose usable tokens — same principle as password hashing              |
+| Refresh token hashing | SHA256 (not bcrypt)                       | Tokens are already 128-bit random — no brute-force surface; SHA256 is sufficient       |
+| Refresh rotation      | Yes, with reuse detection                 | Reused revoked token → revoke all sessions for that user                               |
+| Blacklist store       | Redis string keys                         | O(1) lookup, auto-expiry via TTL, no DB hit on every request                           |
+| Refresh token cookie  | HttpOnly + Secure + SameSite=Lax          | Prevents XSS access; scoped to refresh path only                                       |
+| Claims in token       | Minimal                                   | `sub`, `role`, `email`, `status`, `jti` — avoids stale data                            |
+| Login error message   | Generic                                   | "Invalid email or password" — prevents user enumeration                                |
 | Password hashing      | Argon2id                                  | Password Hashing Competition winner; better resistance to GPU/ASIC attacks than bcrypt |
-| Session visibility    | `sessionId` + `deviceName`                | Users can see and revoke individual devices                                      |
-| Token cleanup         | Daily cron at 3am                         | Keeps `refresh_tokens` table small without manual ops                            |
+| Session visibility    | `sessionId` + `deviceName`                | Users can see and revoke individual devices                                            |
+| Token cleanup         | Daily cron at 3am                         | Keeps `refresh_tokens` table small without manual ops                                  |
 
 ---
 

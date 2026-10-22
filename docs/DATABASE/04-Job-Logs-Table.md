@@ -16,21 +16,21 @@ CREATE TABLE job_logs (
   message TEXT NOT NULL,
   metadata JSONB,
   createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
-  
+
   FOREIGN KEY (jobExecutionId) REFERENCES job_executions(id) ON DELETE CASCADE
 );
 ```
 
 ## Columns
 
-| Column | Type | Purpose |
-|--------|------|---------|
-| `id` | UUID | Unique log entry identifier |
-| `jobExecutionId` | UUID | Which execution this log belongs to |
-| `level` | VARCHAR(20) | Log level: 'DEBUG', 'INFO', 'WARN', 'ERROR' |
-| `message` | TEXT | Human-readable log message |
-| `metadata` | JSONB | Structured key-value data |
-| `createdAt` | TIMESTAMP | When log was emitted |
+| Column           | Type        | Purpose                                     |
+| ---------------- | ----------- | ------------------------------------------- |
+| `id`             | UUID        | Unique log entry identifier                 |
+| `jobExecutionId` | UUID        | Which execution this log belongs to         |
+| `level`          | VARCHAR(20) | Log level: 'DEBUG', 'INFO', 'WARN', 'ERROR' |
+| `message`        | TEXT        | Human-readable log message                  |
+| `metadata`       | JSONB       | Structured key-value data                   |
+| `createdAt`      | TIMESTAMP   | When log was emitted                        |
 
 ## Constraints
 
@@ -39,7 +39,7 @@ CREATE TABLE job_logs (
 ALTER TABLE job_logs ADD CONSTRAINT ck_job_logs_executionId NOT NULL;
 
 -- Valid log levels
-ALTER TABLE job_logs ADD CONSTRAINT ck_job_logs_level 
+ALTER TABLE job_logs ADD CONSTRAINT ck_job_logs_level
   CHECK (level IN ('DEBUG', 'INFO', 'WARN', 'ERROR'));
 
 -- Prevent updates and deletes
@@ -54,24 +54,25 @@ CREATE RULE prevent_job_logs_deletes AS
 
 ```sql
 -- Find logs for an execution
-CREATE INDEX idx_job_logs_executionId 
+CREATE INDEX idx_job_logs_executionId
   ON job_logs(jobExecutionId);
 
 -- Find errors across all jobs
-CREATE INDEX idx_job_logs_level_createdAt 
-  ON job_logs(level, createdAt DESC) 
+CREATE INDEX idx_job_logs_level_createdAt
+  ON job_logs(level, createdAt DESC)
   WHERE level IN ('ERROR', 'WARN');
 
 -- Search logs by level and execution
-CREATE INDEX idx_job_logs_executionId_level 
+CREATE INDEX idx_job_logs_executionId_level
   ON job_logs(jobExecutionId, level);
 
 -- Timeline analysis
-CREATE INDEX idx_job_logs_createdAt 
+CREATE INDEX idx_job_logs_createdAt
   ON job_logs(createdAt DESC);
 ```
 
 **Why**:
+
 - `executionId`: Get all logs for one execution (debugging)
 - `level, createdAt`: Find recent errors (alerting, dashboard)
 - `(executionId, level)`: Find errors in one execution
@@ -99,29 +100,29 @@ const logger = getLogger('send-email');
 logger.info('Starting email job', {
   to: payload.to,
   template: payload.template,
-  executionId: execution.id
+  executionId: execution.id,
 });
 
 try {
   const messageId = await emailService.send({
     to: payload.to,
     template: payload.template,
-    variables: payload.variables
+    variables: payload.variables,
   });
-  
+
   logger.info('Email sent successfully', {
     messageId,
     to: payload.to,
-    executionId: execution.id
+    executionId: execution.id,
   });
-  
+
   return { messageId };
 } catch (error) {
   logger.error('Failed to send email', {
     error: error.message,
     to: payload.to,
     executionId: execution.id,
-    errorCode: error.code
+    errorCode: error.code,
   });
   throw error;
 }
@@ -144,12 +145,12 @@ const logger = pino(
           message: entry.msg,
           metadata: {
             ...entry,
-            msg: undefined,  // Don't duplicate
-            level: undefined
-          }
-        }
+            msg: undefined, // Don't duplicate
+            level: undefined,
+          },
+        },
       });
-    }
+    },
   })
 );
 ```
@@ -159,7 +160,7 @@ const logger = pino(
 ```typescript
 const logs = await db.jobLogs.findMany({
   where: { jobExecutionId: execution.id },
-  orderBy: { createdAt: 'asc' }
+  orderBy: { createdAt: 'asc' },
 });
 
 // Result:
@@ -180,8 +181,8 @@ const timeline = await db.jobLogs.findMany({
     createdAt: true,
     level: true,
     message: true,
-    metadata: true
-  }
+    metadata: true,
+  },
 });
 
 // Result in UI:
@@ -196,10 +197,10 @@ const timeline = await db.jobLogs.findMany({
 const recentErrors = await db.jobLogs.findMany({
   where: {
     level: { in: ['ERROR', 'WARN'] },
-    createdAt: { gt: new Date(Date.now() - 60*60*1000) } // Last hour
+    createdAt: { gt: new Date(Date.now() - 60 * 60 * 1000) }, // Last hour
   },
   orderBy: { createdAt: 'desc' },
-  take: 100
+  take: 100,
 });
 ```
 
@@ -210,9 +211,9 @@ const errorMessages = await db.jobLogs.groupBy({
   by: ['message'],
   where: {
     level: 'ERROR',
-    createdAt: { gt: new Date(Date.now() - 24*60*60*1000) }
+    createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
   },
-  _count: true
+  _count: true,
 });
 
 // Most common errors:
@@ -232,11 +233,11 @@ const allLogs = await db.jobLogs.findMany({
     jobExecutionId: {
       in: db.jobExecutions.findMany({
         where: { jobId: job.id },
-        select: { id: true }
-      })
-    }
+        select: { id: true },
+      }),
+    },
   },
-  orderBy: { createdAt: 'asc' }
+  orderBy: { createdAt: 'asc' },
 });
 
 // Can send to logging service (ELK, Datadog, etc.)
@@ -246,44 +247,48 @@ sendToLoggingService(allLogs);
 ## Log Levels
 
 ### DEBUG
+
 Development and detailed tracing.
 
 ```typescript
 logger.debug('Processing step', {
   currentRetry: 2,
   nextBackoffMs: 4000,
-  handlerName: 'send-email'
+  handlerName: 'send-email',
 });
 ```
 
 ### INFO
+
 Normal operational events.
 
 ```typescript
 logger.info('Email sent successfully', {
   messageId: 'msg-123',
-  to: 'john@example.com'
+  to: 'john@example.com',
 });
 ```
 
 ### WARN
+
 Warning conditions (will try to recover).
 
 ```typescript
 logger.warn('Retry attempt', {
   attempt: 2,
   nextRetryIn: '4 seconds',
-  reason: 'SMTP timeout'
+  reason: 'SMTP timeout',
 });
 ```
 
 ### ERROR
+
 Error conditions (processing failed).
 
 ```typescript
 logger.error('Failed to send email', {
   reason: 'SMTP authentication failed',
-  smtpCode: 535
+  smtpCode: 535,
 });
 ```
 
@@ -297,7 +302,7 @@ logger.info('Job started', {
   jobType: job.type,
   userId: job.userId,
   queueName: job.queueName,
-  payload: job.payload  // Full context
+  payload: job.payload, // Full context
 });
 ```
 
@@ -306,18 +311,18 @@ logger.info('Job started', {
 ```typescript
 // ❌ Secrets in metadata
 logger.info('Connected to database', {
-  password: 'super-secret'  // NEVER!
+  password: 'super-secret', // NEVER!
 });
 
 // ❌ Huge objects
 logger.info('Processing', {
-  entire_database_dump: allUsers  // Too much
+  entire_database_dump: allUsers, // Too much
 });
 
 // ❌ Non-serializable objects
 logger.info('Error', {
-  error: Error('message'),  // Can't JSON.stringify
-  connection: db_connection  // Circular references
+  error: Error('message'), // Can't JSON.stringify
+  connection: db_connection, // Circular references
 });
 ```
 
@@ -329,7 +334,7 @@ logger.info('Database error', {
   errorType: 'QueryTimeout',
   errorMessage: 'Timeout after 30s',
   table: 'jobs',
-  query_duration_ms: 30000
+  query_duration_ms: 30000,
   // No sensitive data!
 });
 ```
@@ -366,9 +371,9 @@ WHERE createdAt < NOW() - INTERVAL '30 days';
 ```typescript
 // Store less metadata for INFO logs
 if (level === 'INFO') {
-  metadata = { /* minimal */ };
+  metadata = {/* minimal */};
 } else if (level === 'ERROR') {
-  metadata = { /* full context */ };
+  metadata = {/* full context */};
 }
 ```
 
@@ -392,6 +397,7 @@ if (level === 'INFO') {
 ```
 
 Structured allows:
+
 - Grep by `to` field
 - COUNT by `level`
 - Analyze patterns
@@ -415,6 +421,7 @@ Structured allows:
 ```
 
 One row per entry allows:
+
 - Filter by level efficiently
 - Timeline analysis
 - Skip irrelevant logs

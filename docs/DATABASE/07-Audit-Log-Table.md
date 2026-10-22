@@ -20,31 +20,31 @@ CREATE TABLE audit_log (
   ipAddress VARCHAR(45),
   userAgent VARCHAR(500),
   createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
-  
+
   FOREIGN KEY (userId) REFERENCES users(id) ON DELETE SET NULL
 );
 ```
 
 ## Columns
 
-| Column | Type | Purpose |
-|--------|------|---------|
-| `id` | UUID | Unique log entry ID |
-| `userId` | UUID | User who performed action (null for system) |
-| `action` | VARCHAR(100) | Action type: 'job_submitted', 'admin_login', 'dlq_replay', etc. |
-| `resourceType` | VARCHAR(50) | What was affected: 'job', 'worker', 'user', etc. |
-| `resourceId` | VARCHAR(255) | ID of affected resource |
-| `status` | VARCHAR(50) | 'success', 'failure', 'error' |
-| `details` | JSONB | Structured event data |
-| `ipAddress` | VARCHAR(45) | Client IP address (IPv4 or IPv6) |
-| `userAgent` | VARCHAR(500) | User-Agent header |
-| `createdAt` | TIMESTAMP | Event timestamp |
+| Column         | Type         | Purpose                                                         |
+| -------------- | ------------ | --------------------------------------------------------------- |
+| `id`           | UUID         | Unique log entry ID                                             |
+| `userId`       | UUID         | User who performed action (null for system)                     |
+| `action`       | VARCHAR(100) | Action type: 'job_submitted', 'admin_login', 'dlq_replay', etc. |
+| `resourceType` | VARCHAR(50)  | What was affected: 'job', 'worker', 'user', etc.                |
+| `resourceId`   | VARCHAR(255) | ID of affected resource                                         |
+| `status`       | VARCHAR(50)  | 'success', 'failure', 'error'                                   |
+| `details`      | JSONB        | Structured event data                                           |
+| `ipAddress`    | VARCHAR(45)  | Client IP address (IPv4 or IPv6)                                |
+| `userAgent`    | VARCHAR(500) | User-Agent header                                               |
+| `createdAt`    | TIMESTAMP    | Event timestamp                                                 |
 
 ## Constraints
 
 ```sql
 -- Valid action types
-ALTER TABLE audit_log ADD CONSTRAINT ck_audit_log_action 
+ALTER TABLE audit_log ADD CONSTRAINT ck_audit_log_action
   CHECK (action IN (
     'job_submitted',
     'job_started',
@@ -69,11 +69,11 @@ ALTER TABLE audit_log ADD CONSTRAINT ck_audit_log_action
   ));
 
 -- Valid statuses
-ALTER TABLE audit_log ADD CONSTRAINT ck_audit_log_status 
+ALTER TABLE audit_log ADD CONSTRAINT ck_audit_log_status
   CHECK (status IN ('success', 'failure', 'error'));
 
 -- Valid resource types
-ALTER TABLE audit_log ADD CONSTRAINT ck_audit_log_resourceType 
+ALTER TABLE audit_log ADD CONSTRAINT ck_audit_log_resourceType
   CHECK (resourceType IS NULL OR resourceType IN (
     'job', 'execution', 'user', 'worker', 'system'
   ));
@@ -90,34 +90,35 @@ CREATE RULE prevent_audit_log_deletes AS
 
 ```sql
 -- Find logs by user (who did what)
-CREATE INDEX idx_audit_log_userId_createdAt 
-  ON audit_log(userId, createdAt DESC) 
+CREATE INDEX idx_audit_log_userId_createdAt
+  ON audit_log(userId, createdAt DESC)
   WHERE userId IS NOT NULL;
 
 -- Find logs by action (what happened)
-CREATE INDEX idx_audit_log_action_createdAt 
+CREATE INDEX idx_audit_log_action_createdAt
   ON audit_log(action, createdAt DESC);
 
 -- Find logs by resource (what was affected)
-CREATE INDEX idx_audit_log_resourceType_resourceId 
+CREATE INDEX idx_audit_log_resourceType_resourceId
   ON audit_log(resourceType, resourceId);
 
 -- Timeline queries (recent events)
-CREATE INDEX idx_audit_log_createdAt 
+CREATE INDEX idx_audit_log_createdAt
   ON audit_log(createdAt DESC);
 
 -- Security: find failed access attempts
-CREATE INDEX idx_audit_log_status_action_createdAt 
-  ON audit_log(status, action, createdAt DESC) 
+CREATE INDEX idx_audit_log_status_action_createdAt
+  ON audit_log(status, action, createdAt DESC)
   WHERE status IN ('failure', 'error') AND action LIKE '%denied';
 
 -- Find admin actions
-CREATE INDEX idx_audit_log_admin_actions 
-  ON audit_log(createdAt DESC) 
+CREATE INDEX idx_audit_log_admin_actions
+  ON audit_log(createdAt DESC)
   WHERE action LIKE 'admin_%';
 ```
 
 **Why**:
+
 - `(userId, createdAt)`: "What did this user do?" (compliance)
 - `(action, createdAt)`: "How many job_submitted events today?" (metrics)
 - `(resourceType, resourceId)`: "What happened to this job?" (debugging)
@@ -150,11 +151,11 @@ await db.auditLog.create({
     details: {
       jobType: job.type,
       queueName: job.queueName,
-      maxRetries: job.maxRetries
+      maxRetries: job.maxRetries,
     },
     ipAddress: req.ip,
-    userAgent: req.headers['user-agent']
-  }
+    userAgent: req.headers['user-agent'],
+  },
 });
 ```
 
@@ -172,11 +173,11 @@ await db.auditLog.create({
     details: {
       reason: dlqItem.reason,
       previousAttempts: dlqItem.failureCount,
-      replayCount: dlqItem.replayCount + 1
+      replayCount: dlqItem.replayCount + 1,
     },
     ipAddress: req.ip,
-    userAgent: req.headers['user-agent']
-  }
+    userAgent: req.headers['user-agent'],
+  },
 });
 ```
 
@@ -195,13 +196,13 @@ if (user.role !== 'admin') {
         requiredRole: 'admin',
         userRole: user.role,
         endpoint: req.path,
-        method: req.method
+        method: req.method,
       },
       ipAddress: req.ip,
-      userAgent: req.headers['user-agent']
-    }
+      userAgent: req.headers['user-agent'],
+    },
   });
-  
+
   res.status(403).json({ error: 'Unauthorized' });
 }
 ```
@@ -215,11 +216,11 @@ const userActions = await db.auditLog.findMany({
     userId: userId,
     createdAt: {
       gte: new Date('2026-01-01'),
-      lte: new Date('2026-12-31')
-    }
+      lte: new Date('2026-12-31'),
+    },
   },
   orderBy: { createdAt: 'desc' },
-  take: 1000
+  take: 1000,
 });
 
 // Result:
@@ -238,9 +239,9 @@ const failedAttempts = await db.auditLog.findMany({
   where: {
     status: 'failure',
     action: 'permission_denied',
-    createdAt: { gt: new Date(Date.now() - 60*60*1000) }
+    createdAt: { gt: new Date(Date.now() - 60 * 60 * 1000) },
   },
-  orderBy: { createdAt: 'desc' }
+  orderBy: { createdAt: 'desc' },
 });
 
 // Alert if too many from same IP
@@ -263,9 +264,9 @@ for (const [ip, count] of Object.entries(failuresByIp)) {
 // What happened to this job?
 const jobTimeline = await db.auditLog.findMany({
   where: {
-    resourceId: jobId
+    resourceId: jobId,
   },
-  orderBy: { createdAt: 'asc' }
+  orderBy: { createdAt: 'asc' },
 });
 
 // Result:
@@ -285,10 +286,10 @@ const dailyStats = await db.auditLog.groupBy({
   by: ['action'],
   where: {
     createdAt: {
-      gte: new Date(Date.now() - 24*60*60*1000)
-    }
+      gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    },
   },
-  _count: true
+  _count: true,
 });
 
 // Result:
@@ -308,23 +309,23 @@ const report = await db.auditLog.findMany({
     action: { startsWith: 'admin_' },
     createdAt: {
       gte: new Date('2026-01-01'),
-      lte: new Date('2026-12-31')
-    }
+      lte: new Date('2026-12-31'),
+    },
   },
   include: {
-    user: { select: { email: true } }
+    user: { select: { email: true } },
   },
-  orderBy: { createdAt: 'asc' }
+  orderBy: { createdAt: 'asc' },
 });
 
 // Convert to CSV for auditor
-const csv = report.map(log => ({
+const csv = report.map((log) => ({
   timestamp: log.createdAt,
   user: log.user?.email || 'SYSTEM',
   action: log.action,
   resource: log.resourceId,
   status: log.status,
-  details: JSON.stringify(log.details)
+  details: JSON.stringify(log.details),
 }));
 
 sendToComplianceSystem(csv);
@@ -333,6 +334,7 @@ sendToComplianceSystem(csv);
 ## Action Types
 
 ### Job Actions
+
 - `job_submitted` - New job created
 - `job_started` - Worker picked up job
 - `job_completed` - Job succeeded
@@ -342,6 +344,7 @@ sendToComplianceSystem(csv);
 - `job_resumed` - Job resumed from pause
 
 ### Admin Actions
+
 - `dlq_replay` - Replayed job from DLQ
 - `dlq_cleared` - Cleared DLQ entries
 - `admin_login` - Admin authenticated
@@ -349,12 +352,14 @@ sendToComplianceSystem(csv);
 - `admin_load_test` - Triggered load test
 
 ### User Actions
+
 - `user_created` - New user registered
 - `user_deleted` - User account deleted
 - `password_changed` - User changed password
 - `role_changed` - Admin changed user role
 
 ### Security Actions
+
 - `permission_denied` - Unauthorized access attempt
 
 ## Design Rationale
@@ -371,6 +376,7 @@ UPDATE audit_log SET action = 'different' WHERE id = ?;  // WRONG!
 ```
 
 **Why immutable**:
+
 - Can't hide or alter audit trail
 - Compliance requirement
 - Forensic value
@@ -395,6 +401,7 @@ UPDATE audit_log SET action = 'different' WHERE id = ?;  // WRONG!
 ```
 
 **Why nullable**:
+
 - System events have no user
 - Preserve audit trail even if user deleted
 - Compliance won't delete user audit history
@@ -420,6 +427,7 @@ UPDATE audit_log SET action = 'different' WHERE id = ?;  // WRONG!
 ```
 
 **Why structured**:
+
 - Queryable in SQL
 - Parse and analyze programmatically
 - GROUP BY details fields
@@ -435,6 +443,7 @@ UPDATE audit_log SET action = 'different' WHERE id = ?;  // WRONG!
 ```
 
 **Why**:
+
 - Detect unauthorized access patterns
 - Geo-tracking
 - Bot/scraper detection

@@ -21,26 +21,26 @@ CREATE TABLE workers (
   startedAt TIMESTAMP NOT NULL DEFAULT NOW(),
   lastHeartbeatAt TIMESTAMP NOT NULL DEFAULT NOW(),
   updatedAt TIMESTAMP NOT NULL DEFAULT NOW(),
-  
+
   FOREIGN KEY (currentJobId) REFERENCES jobs(id) ON DELETE SET NULL
 );
 ```
 
 ## Columns
 
-| Column | Type | Purpose |
-|--------|------|---------|
-| `id` | UUID | Database row ID |
-| `workerId` | VARCHAR(255) | Unique worker identifier (e.g., 'worker-prod-1') |
-| `hostname` | VARCHAR(255) | Machine hostname running the worker |
-| `status` | VARCHAR(50) | 'idle' (waiting for jobs) or 'busy' (processing) |
-| `currentJobId` | UUID | Job currently being processed (null if idle) |
-| `concurrency` | INT | Max concurrent jobs for this worker |
-| `processedCount` | INT | Total jobs successfully processed |
-| `failureCount` | INT | Total job failures (for monitoring) |
-| `startedAt` | TIMESTAMP | When worker process started |
-| `lastHeartbeatAt` | TIMESTAMP | Last heartbeat time (detects crashes) |
-| `updatedAt` | TIMESTAMP | Last row update |
+| Column            | Type         | Purpose                                          |
+| ----------------- | ------------ | ------------------------------------------------ |
+| `id`              | UUID         | Database row ID                                  |
+| `workerId`        | VARCHAR(255) | Unique worker identifier (e.g., 'worker-prod-1') |
+| `hostname`        | VARCHAR(255) | Machine hostname running the worker              |
+| `status`          | VARCHAR(50)  | 'idle' (waiting for jobs) or 'busy' (processing) |
+| `currentJobId`    | UUID         | Job currently being processed (null if idle)     |
+| `concurrency`     | INT          | Max concurrent jobs for this worker              |
+| `processedCount`  | INT          | Total jobs successfully processed                |
+| `failureCount`    | INT          | Total job failures (for monitoring)              |
+| `startedAt`       | TIMESTAMP    | When worker process started                      |
+| `lastHeartbeatAt` | TIMESTAMP    | Last heartbeat time (detects crashes)            |
+| `updatedAt`       | TIMESTAMP    | Last row update                                  |
 
 ## Constraints
 
@@ -49,19 +49,19 @@ CREATE TABLE workers (
 ALTER TABLE workers ADD CONSTRAINT uq_workers_workerId UNIQUE (workerId);
 
 -- Valid statuses
-ALTER TABLE workers ADD CONSTRAINT ck_workers_status 
+ALTER TABLE workers ADD CONSTRAINT ck_workers_status
   CHECK (status IN ('idle', 'busy'));
 
 -- Concurrency must be positive
-ALTER TABLE workers ADD CONSTRAINT ck_workers_concurrency 
+ALTER TABLE workers ADD CONSTRAINT ck_workers_concurrency
   CHECK (concurrency > 0);
 
 -- Counts can't be negative
-ALTER TABLE workers ADD CONSTRAINT ck_workers_counts 
+ALTER TABLE workers ADD CONSTRAINT ck_workers_counts
   CHECK (processedCount >= 0 AND failureCount >= 0);
 
 -- lastHeartbeat must be after start
-ALTER TABLE workers ADD CONSTRAINT ck_workers_heartbeat 
+ALTER TABLE workers ADD CONSTRAINT ck_workers_heartbeat
   CHECK (lastHeartbeatAt >= startedAt);
 ```
 
@@ -69,24 +69,25 @@ ALTER TABLE workers ADD CONSTRAINT ck_workers_heartbeat
 
 ```sql
 -- Find online workers
-CREATE INDEX idx_workers_status_heartbeat 
-  ON workers(status, lastHeartbeatAt DESC) 
+CREATE INDEX idx_workers_status_heartbeat
+  ON workers(status, lastHeartbeatAt DESC)
   WHERE status = 'idle';
 
 -- Find stale workers (dead detection)
-CREATE INDEX idx_workers_lastHeartbeatAt 
+CREATE INDEX idx_workers_lastHeartbeatAt
   ON workers(lastHeartbeatAt ASC);
 
 -- Worker stats
-CREATE INDEX idx_workers_startedAt 
+CREATE INDEX idx_workers_startedAt
   ON workers(startedAt DESC);
 
 -- Quick lookup by ID
-CREATE UNIQUE INDEX idx_workers_workerId 
+CREATE UNIQUE INDEX idx_workers_workerId
   ON workers(workerId);
 ```
 
 **Why**:
+
 - `status, lastHeartbeatAt`: Find idle workers (scheduler)
 - `lastHeartbeatAt`: Detect dead workers (cleanup job)
 - `startedAt`: Worker uptime analytics
@@ -116,8 +117,8 @@ const worker = await db.workers.create({
     hostname: hostname(),
     status: 'idle',
     concurrency: WORKER_CONCURRENCY,
-    startedAt: new Date()
-  }
+    startedAt: new Date(),
+  },
 });
 
 logger.info('Worker registered', { workerId, workerId: worker.id });
@@ -129,11 +130,11 @@ logger.info('Worker registered', { workerId, workerId: worker.id });
 setInterval(async () => {
   await db.workers.update({
     where: { workerId: WORKER_ID },
-    data: { 
+    data: {
       lastHeartbeatAt: new Date(),
       status: isBusy ? 'busy' : 'idle',
-      currentJobId: currentJob?.id || null
-    }
+      currentJobId: currentJob?.id || null,
+    },
   });
 }, 5000);
 ```
@@ -145,29 +146,29 @@ setInterval(async () => {
 const staleWorkers = await db.workers.findMany({
   where: {
     lastHeartbeatAt: {
-      lt: new Date(Date.now() - 30*1000)  // No heartbeat for 30s
-    }
-  }
+      lt: new Date(Date.now() - 30 * 1000), // No heartbeat for 30s
+    },
+  },
 });
 
 for (const stale of staleWorkers) {
   logger.warn('Removing stale worker', { workerId: stale.workerId });
-  
+
   // Move any in-flight jobs back to queue
   if (stale.currentJobId) {
     await db.jobs.update({
       where: { id: stale.currentJobId },
       data: {
-        status: 'queued',  // Back to queue for another worker
-        startedAt: null,   // Reset start time
-        updatedAt: new Date()
-      }
+        status: 'queued', // Back to queue for another worker
+        startedAt: null, // Reset start time
+        updatedAt: new Date(),
+      },
     });
   }
-  
+
   // Delete worker
   await db.workers.delete({
-    where: { id: stale.id }
+    where: { id: stale.id },
   });
 }
 ```
@@ -181,8 +182,8 @@ await db.workers.update({
   data: {
     processedCount: { increment: 1 },
     currentJobId: null,
-    status: 'idle'
-  }
+    status: 'idle',
+  },
 });
 
 // On failure
@@ -191,8 +192,8 @@ await db.workers.update({
   data: {
     failureCount: { increment: 1 },
     currentJobId: null,
-    status: 'idle'
-  }
+    status: 'idle',
+  },
 });
 ```
 
@@ -200,7 +201,7 @@ await db.workers.update({
 
 ```typescript
 const workers = await db.workers.findMany({
-  orderBy: { lastHeartbeatAt: 'desc' }
+  orderBy: { lastHeartbeatAt: 'desc' },
 });
 
 // Result:
@@ -222,9 +223,9 @@ const workers = await db.workers.findMany({
 const idleWorkers = await db.workers.findMany({
   where: {
     status: 'idle',
-    concurrency: { gt: 0 }  // Has capacity
+    concurrency: { gt: 0 }, // Has capacity
   },
-  orderBy: { lastHeartbeatAt: 'desc' }
+  orderBy: { lastHeartbeatAt: 'desc' },
 });
 
 // Assign new jobs to idle workers
@@ -240,18 +241,17 @@ for (const worker of idleWorkers) {
 
 ```typescript
 const stats = await db.workers.findUnique({
-  where: { workerId: 'worker-prod-1' }
+  where: { workerId: 'worker-prod-1' },
 });
 
-const successRate = stats.processedCount / 
-  (stats.processedCount + stats.failureCount);
+const successRate = stats.processedCount / (stats.processedCount + stats.failureCount);
 
 logger.info('Worker stats', {
   workerId: 'worker-prod-1',
   totalProcessed: stats.processedCount,
   failureCount: stats.failureCount,
   successRate: (successRate * 100).toFixed(2) + '%',
-  uptime: formatDistance(stats.startedAt, new Date())
+  uptime: formatDistance(stats.startedAt, new Date()),
 });
 ```
 
@@ -262,9 +262,9 @@ logger.info('Worker stats', {
 await db.workers.deleteMany({
   where: {
     lastHeartbeatAt: {
-      lt: new Date(Date.now() - 60*1000)  // Dead for 1+ minute
-    }
-  }
+      lt: new Date(Date.now() - 60 * 1000), // Dead for 1+ minute
+    },
+  },
 });
 ```
 
@@ -282,8 +282,8 @@ await db.workers.deleteMany({
   → Process job...
 
 [4] COMPLETE JOB
-  → db.workers.update({ 
-      status: 'idle', 
+  → db.workers.update({
+      status: 'idle',
       currentJobId: null,
       processedCount: increment,
       updatedAt: NOW()
@@ -312,6 +312,7 @@ await db.workers.deleteMany({
 ```
 
 **Why ephemeral**:
+
 - Workers are cattle, not pets
 - Don't need permanent records
 - Keeping old rows wastes space
@@ -329,6 +330,7 @@ if (lastHeartbeatAt < NOW() - 30s) {
 ```
 
 **Why heartbeat**:
+
 - Worker process runs always
 - Low-overhead ping
 - Can detect soft crashes (hung process)
@@ -344,6 +346,7 @@ currentJobId UUID NOT NULL
 ```
 
 **Why optional**:
+
 - Idle workers have no current job
 - Can delete job without orphaning worker
 - Simpler concurrency logic
@@ -362,6 +365,7 @@ currentJobId UUID NOT NULL
 ```
 
 **Why counters not history**:
+
 - This is runtime monitoring, not audit trail
 - Calculate success rate quickly
 - Cheap incremental updates

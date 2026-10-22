@@ -23,28 +23,28 @@ CREATE TABLE job_executions (
   errorMessage TEXT,
   errorStack TEXT,
   createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
-  
+
   FOREIGN KEY (jobId) REFERENCES jobs(id) ON DELETE CASCADE
 );
 ```
 
 ## Columns
 
-| Column | Type | Purpose |
-|--------|------|---------|
-| `id` | UUID | Unique execution identifier |
-| `jobId` | UUID | Which job this execution belongs to |
-| `workerId` | VARCHAR(255) | Which worker processed it (for debugging) |
-| `attempt` | INT | Attempt number (1 = first, 2 = first retry) |
-| `status` | VARCHAR(50) | 'success' or 'failure' |
-| `startedAt` | TIMESTAMP | When worker started processing |
-| `completedAt` | TIMESTAMP | When execution finished (success or failure) |
-| `durationMs` | INT | completedAt - startedAt in milliseconds |
-| `result` | JSONB | Result data (on success) |
-| `errorType` | VARCHAR(255) | Error class: 'SMTPTimeout', 'ValidationError' |
-| `errorMessage` | TEXT | Human-readable error message |
-| `errorStack` | TEXT | Full stack trace for debugging |
-| `createdAt` | TIMESTAMP | When this row was created |
+| Column         | Type         | Purpose                                       |
+| -------------- | ------------ | --------------------------------------------- |
+| `id`           | UUID         | Unique execution identifier                   |
+| `jobId`        | UUID         | Which job this execution belongs to           |
+| `workerId`     | VARCHAR(255) | Which worker processed it (for debugging)     |
+| `attempt`      | INT          | Attempt number (1 = first, 2 = first retry)   |
+| `status`       | VARCHAR(50)  | 'success' or 'failure'                        |
+| `startedAt`    | TIMESTAMP    | When worker started processing                |
+| `completedAt`  | TIMESTAMP    | When execution finished (success or failure)  |
+| `durationMs`   | INT          | completedAt - startedAt in milliseconds       |
+| `result`       | JSONB        | Result data (on success)                      |
+| `errorType`    | VARCHAR(255) | Error class: 'SMTPTimeout', 'ValidationError' |
+| `errorMessage` | TEXT         | Human-readable error message                  |
+| `errorStack`   | TEXT         | Full stack trace for debugging                |
+| `createdAt`    | TIMESTAMP    | When this row was created                     |
 
 ## Constraints
 
@@ -53,19 +53,19 @@ CREATE TABLE job_executions (
 ALTER TABLE job_executions ADD CONSTRAINT ck_job_exec_jobId NOT NULL;
 
 -- Valid statuses
-ALTER TABLE job_executions ADD CONSTRAINT ck_job_exec_status 
+ALTER TABLE job_executions ADD CONSTRAINT ck_job_exec_status
   CHECK (status IN ('success', 'failure'));
 
 -- Attempt must be >= 1
-ALTER TABLE job_executions ADD CONSTRAINT ck_job_exec_attempt 
+ALTER TABLE job_executions ADD CONSTRAINT ck_job_exec_attempt
   CHECK (attempt >= 1);
 
 -- completedAt must be after startedAt
-ALTER TABLE job_executions ADD CONSTRAINT ck_job_exec_timestamps 
+ALTER TABLE job_executions ADD CONSTRAINT ck_job_exec_timestamps
   CHECK (completedAt IS NULL OR completedAt >= startedAt);
 
 -- durationMs consistency check
-ALTER TABLE job_executions ADD CONSTRAINT ck_job_exec_duration 
+ALTER TABLE job_executions ADD CONSTRAINT ck_job_exec_duration
   CHECK (durationMs IS NULL OR (
     EXTRACT(EPOCH FROM (completedAt - startedAt)) * 1000 = durationMs
   ));
@@ -82,29 +82,30 @@ CREATE RULE prevent_job_execution_deletes AS
 
 ```sql
 -- Find all executions for a job
-CREATE INDEX idx_job_executions_jobId 
+CREATE INDEX idx_job_executions_jobId
   ON job_executions(jobId);
 
 -- Find recent failures (for debugging)
-CREATE INDEX idx_job_executions_status_createdAt 
-  ON job_executions(status, createdAt DESC) 
+CREATE INDEX idx_job_executions_status_createdAt
+  ON job_executions(status, createdAt DESC)
   WHERE status = 'failure';
 
 -- Find executions by worker (for worker debugging)
-CREATE INDEX idx_job_executions_workerId 
+CREATE INDEX idx_job_executions_workerId
   ON job_executions(workerId, startedAt DESC);
 
 -- Analytics: execution duration
-CREATE INDEX idx_job_executions_durationMs 
-  ON job_executions(durationMs) 
+CREATE INDEX idx_job_executions_durationMs
+  ON job_executions(durationMs)
   WHERE status = 'success';
 
 -- Most recent execution for a job
-CREATE INDEX idx_job_executions_jobId_attempt 
+CREATE INDEX idx_job_executions_jobId_attempt
   ON job_executions(jobId, attempt DESC);
 ```
 
 **Why**:
+
 - `jobId`: Retrieve all attempts for one job (debugging)
 - `status, createdAt`: Find recent failures across all jobs
 - `workerId`: Find jobs processed by a specific worker
@@ -142,9 +143,9 @@ const execution = await db.jobExecutions.create({
     durationMs: 234,
     result: {
       messageId: 'msg-123',
-      to: 'john@example.com'
-    }
-  }
+      to: 'john@example.com',
+    },
+  },
 });
 ```
 
@@ -162,8 +163,8 @@ const execution = await db.jobExecutions.create({
     durationMs: 5000,
     errorType: 'SMTPTimeout',
     errorMessage: 'Connection timeout after 5s',
-    errorStack: error.stack
-  }
+    errorStack: error.stack,
+  },
 });
 ```
 
@@ -173,7 +174,7 @@ const execution = await db.jobExecutions.create({
 // Before processing, check if already succeeded
 const lastExecution = await db.jobExecutions.findFirst({
   where: { jobId: job.id },
-  orderBy: { attempt: 'desc' }
+  orderBy: { attempt: 'desc' },
 });
 
 if (lastExecution?.status === 'success') {
@@ -187,7 +188,7 @@ if (lastExecution?.status === 'success') {
 ```typescript
 const history = await db.jobExecutions.findMany({
   where: { jobId: job.id },
-  orderBy: { attempt: 'asc' }
+  orderBy: { attempt: 'asc' },
 });
 
 // Result:
@@ -205,10 +206,10 @@ const errorAnalysis = await db.jobExecutions.groupBy({
   by: ['errorType'],
   where: {
     status: 'failure',
-    createdAt: { gt: new Date(Date.now() - 24*60*60*1000) }
+    createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
   },
   _count: true,
-  _avg: { durationMs: true }
+  _avg: { durationMs: true },
 });
 
 // Result:
@@ -224,10 +225,10 @@ const errorAnalysis = await db.jobExecutions.groupBy({
 const slowJobs = await db.jobExecutions.findMany({
   where: {
     status: 'success',
-    durationMs: { gt: 10000 } // > 10 seconds
+    durationMs: { gt: 10000 }, // > 10 seconds
   },
   orderBy: { durationMs: 'desc' },
-  take: 10
+  take: 10,
 });
 ```
 
@@ -237,10 +238,10 @@ const slowJobs = await db.jobExecutions.findMany({
 const workerStats = await db.jobExecutions.groupBy({
   by: ['workerId'],
   where: {
-    createdAt: { gt: new Date(Date.now() - 60*60*1000) } // Last hour
+    createdAt: { gt: new Date(Date.now() - 60 * 60 * 1000) }, // Last hour
   },
   _count: true,
-  _avg: { durationMs: true }
+  _avg: { durationMs: true },
 });
 
 // Result:
@@ -268,6 +269,7 @@ await db.jobExecutions.create({
 ```
 
 **Benefits of immutability**:
+
 - Complete audit trail (can't hide failures)
 - Replay history exactly
 - Compliance/legal requirements
@@ -293,7 +295,7 @@ If someone tries to update/delete, PostgreSQL silently ignores it:
 // This will succeed but do nothing
 await db.jobExecutions.update({
   where: { id: '123' },
-  data: { status: 'different' }
+  data: { status: 'different' },
 });
 
 // Row is unchanged - rules prevented the operation
@@ -334,6 +336,7 @@ Attempt 3: Worker picks up, succeeds
 ```
 
 Enables:
+
 - Group failures by type
 - Find patterns
 - Debug specific issues
@@ -350,6 +353,7 @@ Enables:
 ```
 
 If result is wrong, can check worker logs. Useful for:
+
 - Debugging worker-specific issues
 - Load balancing analysis
 - Worker performance monitoring

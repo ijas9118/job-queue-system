@@ -93,53 +93,37 @@ enum JobStatus {
   DELAYED = 'delayed',
   DEAD_LETTER = 'dead_letter',
   CANCELLED = 'cancelled',
-  PAUSED = 'paused'
+  PAUSED = 'paused',
 }
 
 // Validate state transitions
 function isValidTransition(from: JobStatus, to: JobStatus): boolean {
   const validTransitions: Record<JobStatus, JobStatus[]> = {
-    [JobStatus.QUEUED]: [
-      JobStatus.ACTIVE,
-      JobStatus.DELAYED,
-      JobStatus.CANCELLED
-    ],
-    [JobStatus.ACTIVE]: [
-      JobStatus.COMPLETED,
-      JobStatus.FAILED,
-      JobStatus.PAUSED
-    ],
+    [JobStatus.QUEUED]: [JobStatus.ACTIVE, JobStatus.DELAYED, JobStatus.CANCELLED],
+    [JobStatus.ACTIVE]: [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.PAUSED],
     [JobStatus.FAILED]: [
-      JobStatus.DELAYED,  // if retries left
-      JobStatus.DEAD_LETTER  // if no retries
+      JobStatus.DELAYED, // if retries left
+      JobStatus.DEAD_LETTER, // if no retries
     ],
-    [JobStatus.DELAYED]: [
-      JobStatus.QUEUED,
-      JobStatus.CANCELLED
-    ],
-    [JobStatus.PAUSED]: [
-      JobStatus.ACTIVE,
-      JobStatus.CANCELLED
-    ],
+    [JobStatus.DELAYED]: [JobStatus.QUEUED, JobStatus.CANCELLED],
+    [JobStatus.PAUSED]: [JobStatus.ACTIVE, JobStatus.CANCELLED],
     // Terminal states
     [JobStatus.COMPLETED]: [],
     [JobStatus.DEAD_LETTER]: [],
-    [JobStatus.CANCELLED]: []
+    [JobStatus.CANCELLED]: [],
   };
-  
+
   return validTransitions[from]?.includes(to) ?? false;
 }
 
 // Only allow valid transitions
 async function updateJobStatus(jobId: string, newStatus: JobStatus) {
   const job = await db.jobs.findUnique(jobId);
-  
+
   if (!isValidTransition(job.status, newStatus)) {
-    throw new Error(
-      `Invalid transition: ${job.status} → ${newStatus}`
-    );
+    throw new Error(`Invalid transition: ${job.status} → ${newStatus}`);
   }
-  
+
   await db.jobs.update(jobId, { status: newStatus });
 }
 ```
@@ -195,14 +179,14 @@ VALUES (
 
 ## Benefits
 
-| Benefit | Example |
-|---------|---------|
-| **No ambiguous states** | Job is always in exactly one state |
-| **Prevents bugs** | Can't accidentally reprocess completed job |
-| **Debuggable** | Know exactly what state job is in |
-| **Testable** | Test each state and transition |
-| **Observable** | Clear state history for monitoring |
-| **Recoverable** | Can replay from known state |
+| Benefit                 | Example                                    |
+| ----------------------- | ------------------------------------------ |
+| **No ambiguous states** | Job is always in exactly one state         |
+| **Prevents bugs**       | Can't accidentally reprocess completed job |
+| **Debuggable**          | Know exactly what state job is in          |
+| **Testable**            | Test each state and transition             |
+| **Observable**          | Clear state history for monitoring         |
+| **Recoverable**         | Can replay from known state                |
 
 ## Testing
 
@@ -229,9 +213,9 @@ describe('Job State Transitions', () => {
       ['completed', 'queued'],
       ['cancelled', 'active'],
       ['paused', 'completed'],
-      ['queued', 'failed']
+      ['queued', 'failed'],
     ];
-    
+
     invalidTransitions.forEach(([from, to]) => {
       expect(isValidTransition(from, to)).toBe(false);
     });

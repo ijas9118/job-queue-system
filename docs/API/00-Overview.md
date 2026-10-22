@@ -59,6 +59,7 @@ Required: `Authorization` header
 ### GET `/jobs` - List User's Jobs
 
 Query params:
+
 ```
 ?status=active,completed
 &type=send-email

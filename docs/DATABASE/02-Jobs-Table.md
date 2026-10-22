@@ -28,43 +28,43 @@ CREATE TABLE jobs (
   movedToDLQAt TIMESTAMP,
   cancelledAt TIMESTAMP,
   updatedAt TIMESTAMP NOT NULL DEFAULT NOW(),
-  
+
   -- Tags for filtering
   tags JSONB,
-  
+
   -- Timing analysis
   estimatedDurationMs INT,
-  
+
   FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 ```
 
 ## Columns
 
-| Column | Type | Purpose |
-|--------|------|---------|
-| `id` | UUID | Unique job identifier |
-| `userId` | UUID | Owner of this job |
-| `type` | VARCHAR(100) | Job type: 'send-email', 'process-payment', etc. |
-| `name` | VARCHAR(255) | Human-readable job name |
-| `queueName` | VARCHAR(100) | Queue this job belongs to: 'email', 'payment', 'background' |
-| `status` | VARCHAR(50) | Current state: queued, active, completed, failed, delayed, dead_letter, cancelled, paused |
-| `priority` | INT | 0 = normal, 1+ = higher priority, -1 = lower |
-| `payload` | JSONB | Input data for the job handler |
-| `result` | JSONB | Result after successful completion |
-| `maxRetries` | INT | Max retry attempts before moving to DLQ |
-| `retryCount` | INT | Current retry count |
-| `idempotencyKey` | VARCHAR(255) | Unique key per user for duplicate prevention |
-| `delayUntil` | TIMESTAMP | If delayed, when to retry |
-| `createdAt` | TIMESTAMP | Job submission time |
-| `startedAt` | TIMESTAMP | First processing start |
-| `completedAt` | TIMESTAMP | Successful completion time |
-| `failedAt` | TIMESTAMP | Last failure time |
-| `movedToDLQAt` | TIMESTAMP | When moved to dead letter queue |
-| `updatedAt` | TIMESTAMP | Last status update |
-| `cancelledAt` | TIMESTAMP | Set when `status` transitions to `'cancelled'` |
-| `tags` | JSONB | Array of tags: `["stripe", "invoice", "urgent"]` |
-| `estimatedDurationMs` | INT | Job execution time estimate for analytics |
+| Column                | Type         | Purpose                                                                                   |
+| --------------------- | ------------ | ----------------------------------------------------------------------------------------- |
+| `id`                  | UUID         | Unique job identifier                                                                     |
+| `userId`              | UUID         | Owner of this job                                                                         |
+| `type`                | VARCHAR(100) | Job type: 'send-email', 'process-payment', etc.                                           |
+| `name`                | VARCHAR(255) | Human-readable job name                                                                   |
+| `queueName`           | VARCHAR(100) | Queue this job belongs to: 'email', 'payment', 'background'                               |
+| `status`              | VARCHAR(50)  | Current state: queued, active, completed, failed, delayed, dead_letter, cancelled, paused |
+| `priority`            | INT          | 0 = normal, 1+ = higher priority, -1 = lower                                              |
+| `payload`             | JSONB        | Input data for the job handler                                                            |
+| `result`              | JSONB        | Result after successful completion                                                        |
+| `maxRetries`          | INT          | Max retry attempts before moving to DLQ                                                   |
+| `retryCount`          | INT          | Current retry count                                                                       |
+| `idempotencyKey`      | VARCHAR(255) | Unique key per user for duplicate prevention                                              |
+| `delayUntil`          | TIMESTAMP    | If delayed, when to retry                                                                 |
+| `createdAt`           | TIMESTAMP    | Job submission time                                                                       |
+| `startedAt`           | TIMESTAMP    | First processing start                                                                    |
+| `completedAt`         | TIMESTAMP    | Successful completion time                                                                |
+| `failedAt`            | TIMESTAMP    | Last failure time                                                                         |
+| `movedToDLQAt`        | TIMESTAMP    | When moved to dead letter queue                                                           |
+| `updatedAt`           | TIMESTAMP    | Last status update                                                                        |
+| `cancelledAt`         | TIMESTAMP    | Set when `status` transitions to `'cancelled'`                                            |
+| `tags`                | JSONB        | Array of tags: `["stripe", "invoice", "urgent"]`                                          |
+| `estimatedDurationMs` | INT          | Job execution time estimate for analytics                                                 |
 
 ## Constraints
 
@@ -73,19 +73,19 @@ CREATE TABLE jobs (
 ALTER TABLE jobs ADD CONSTRAINT ck_jobs_userId NOT NULL;
 
 -- Valid status values
-ALTER TABLE jobs ADD CONSTRAINT ck_jobs_status 
+ALTER TABLE jobs ADD CONSTRAINT ck_jobs_status
   CHECK (status IN ('queued', 'active', 'completed', 'failed', 'delayed', 'dead_letter', 'cancelled', 'paused'));
 
 -- retryCount can't exceed maxRetries
-ALTER TABLE jobs ADD CONSTRAINT ck_jobs_retryCount 
+ALTER TABLE jobs ADD CONSTRAINT ck_jobs_retryCount
   CHECK (retryCount <= maxRetries);
 
 -- priority is reasonable range
-ALTER TABLE jobs ADD CONSTRAINT ck_jobs_priority 
+ALTER TABLE jobs ADD CONSTRAINT ck_jobs_priority
   CHECK (priority >= -100 AND priority <= 100);
 
 -- Idempotency key unique per user (not global)
-ALTER TABLE jobs ADD CONSTRAINT uq_jobs_idempotencyKey 
+ALTER TABLE jobs ADD CONSTRAINT uq_jobs_idempotencyKey
   UNIQUE (userId, idempotencyKey) WHERE idempotencyKey IS NOT NULL;
 ```
 
@@ -93,40 +93,41 @@ ALTER TABLE jobs ADD CONSTRAINT uq_jobs_idempotencyKey
 
 ```sql
 -- Most critical
-CREATE INDEX idx_jobs_userId_status_createdAt 
-  ON jobs(userId, status, createdAt DESC) 
+CREATE INDEX idx_jobs_userId_status_createdAt
+  ON jobs(userId, status, createdAt DESC)
   WHERE cancelledAt IS NULL;
 
-CREATE INDEX idx_jobs_status 
-  ON jobs(status) 
+CREATE INDEX idx_jobs_status
+  ON jobs(status)
   WHERE cancelledAt IS NULL;
 
-CREATE INDEX idx_jobs_queueName_status 
-  ON jobs(queueName, status) 
+CREATE INDEX idx_jobs_queueName_status
+  ON jobs(queueName, status)
   WHERE cancelledAt IS NULL;
 
 -- For retries
-CREATE INDEX idx_jobs_delayUntil 
-  ON jobs(delayUntil) 
+CREATE INDEX idx_jobs_delayUntil
+  ON jobs(delayUntil)
   WHERE status = 'delayed' AND cancelledAt IS NULL;
 
 -- For idempotency
-CREATE UNIQUE INDEX idx_jobs_idempotency 
-  ON jobs(userId, idempotencyKey) 
+CREATE UNIQUE INDEX idx_jobs_idempotency
+  ON jobs(userId, idempotencyKey)
   WHERE idempotencyKey IS NOT NULL AND cancelledAt IS NULL;
 
 -- For analytics
-CREATE INDEX idx_jobs_createdAt_status 
-  ON jobs(createdAt DESC, status) 
+CREATE INDEX idx_jobs_createdAt_status
+  ON jobs(createdAt DESC, status)
   WHERE cancelledAt IS NULL;
 
 -- For DLQ lookup
-CREATE INDEX idx_jobs_movedToDLQAt 
-  ON jobs(movedToDLQAt DESC) 
+CREATE INDEX idx_jobs_movedToDLQAt
+  ON jobs(movedToDLQAt DESC)
   WHERE movedToDLQAt IS NOT NULL;
 ```
 
 **Why**:
+
 - `(userId, status, createdAt)`: Main query - "my jobs ordered by recency, filtered by status"
 - `status`: Dashboard counts by status
 - `(queueName, status)`: Queue-specific analytics
@@ -161,9 +162,9 @@ const existing = await db.jobs.findUnique({
   where: {
     jobs_userId_idempotencyKey: {
       userId: user.id,
-      idempotencyKey: 'stripe-evt-123'
-    }
-  }
+      idempotencyKey: 'stripe-evt-123',
+    },
+  },
 });
 
 if (existing) return existing;
@@ -179,8 +180,8 @@ const job = await db.jobs.create({
     payload: { to: 'john@example.com', template: 'welcome' },
     maxRetries: 3,
     idempotencyKey: 'stripe-evt-123',
-    tags: ['stripe', 'invoice']
-  }
+    tags: ['stripe', 'invoice'],
+  },
 });
 ```
 
@@ -190,10 +191,10 @@ const job = await db.jobs.create({
 const jobs = await db.jobs.findMany({
   where: {
     userId: user.id,
-    cancelledAt: null
+    cancelledAt: null,
   },
   orderBy: { createdAt: 'desc' },
-  take: 50
+  take: 50,
 });
 ```
 
@@ -204,8 +205,8 @@ const readyToRetry = await db.jobs.findMany({
   where: {
     status: 'delayed',
     delayUntil: { lte: new Date() },
-    cancelledAt: null
-  }
+    cancelledAt: null,
+  },
 });
 ```
 
@@ -218,8 +219,8 @@ await db.jobs.update({
   data: {
     status: 'active',
     startedAt: new Date(),
-    updatedAt: new Date()
-  }
+    updatedAt: new Date(),
+  },
 });
 
 // Mark completed
@@ -229,8 +230,8 @@ await db.jobs.update({
     status: 'completed',
     result: { messageId: 'msg-123' },
     completedAt: new Date(),
-    updatedAt: new Date()
-  }
+    updatedAt: new Date(),
+  },
 });
 
 // Schedule retry
@@ -241,8 +242,8 @@ await db.jobs.update({
     retryCount: { increment: 1 },
     delayUntil: new Date(Date.now() + 4000), // Exponential backoff
     failedAt: new Date(),
-    updatedAt: new Date()
-  }
+    updatedAt: new Date(),
+  },
 });
 ```
 
@@ -253,10 +254,10 @@ const stats = await db.jobs.groupBy({
   by: ['status'],
   where: {
     queueName: 'email',
-    createdAt: { gt: new Date(Date.now() - 24*60*60*1000) },
-    cancelledAt: null
+    createdAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+    cancelledAt: null,
   },
-  _count: true
+  _count: true,
 });
 
 // Result:
@@ -274,8 +275,8 @@ await db.jobs.update({
   data: {
     status: 'cancelled',
     cancelledAt: new Date(),
-    updatedAt: new Date()
-  }
+    updatedAt: new Date(),
+  },
 });
 ```
 
@@ -296,7 +297,7 @@ const jobState = await redis.get('job:123');
 
 // ✅ Truth in PostgreSQL
 const job = await db.jobs.findUnique({ where: { id: '123' } });
-const status = job.status;  // Single source of truth
+const status = job.status; // Single source of truth
 ```
 
 **Why**: Redis can be flushed, restarted, or lost. Database is durable.
@@ -305,10 +306,10 @@ const status = job.status;  // Single source of truth
 
 ```typescript
 // ✅ Correct: per-user idempotency
-UNIQUE (userId, idempotencyKey)
+UNIQUE(userId, idempotencyKey);
 
 // ❌ Wrong: global idempotency
-UNIQUE (idempotencyKey)
+UNIQUE(idempotencyKey);
 ```
 
 **Why**: Different users can retry the same request independently.

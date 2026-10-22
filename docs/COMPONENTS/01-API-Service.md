@@ -184,17 +184,17 @@ Short-lived (15 min) access token + rotating refresh token — not a single long
 ```typescript
 // Access token payload
 interface AccessTokenPayload {
-  sub: UUID;         // user id
+  sub: UUID; // user id
   email: string;
   role: 'admin' | 'user';
   status: 'active' | 'suspended' | 'archived';
-  jti: string;        // unique per token, used for blacklisting on logout
+  jti: string; // unique per token, used for blacklisting on logout
   iat: number;
-  exp: number;        // iat + 900 (15 min)
+  exp: number; // iat + 900 (15 min)
 }
 
 // Usage
-Authorization: Bearer <accessToken>
+Authorization: Bearer<accessToken>;
 ```
 
 The refresh token is a separate opaque, high-entropy random value, stored server-side only as a SHA-256 hash, and delivered to the browser as an **HttpOnly, Secure, SameSite=Lax cookie** — not `localStorage` — so it's never reachable from injected JS.
@@ -218,9 +218,9 @@ The API maintains WebSocket connections and broadcasts job events. Socket.IO is 
 ```typescript
 // Client connects
 socket.on('connect', () => {
-  socket.emit('subscribe', { 
+  socket.emit('subscribe', {
     channel: 'jobs',
-    filters: { queueName: 'email' }
+    filters: { queueName: 'email' },
   });
 });
 
@@ -244,12 +244,13 @@ All errors return consistent JSON response via Fastify's `setErrorHandler`:
     message: 'Job with id abc123 not found';
     statusCode: 404;
     timestamp: '2026-07-02T10:00:00Z';
-    requestId: 'req-xyz';  // Fastify's built-in request ID
+    requestId: 'req-xyz'; // Fastify's built-in request ID
   }
 }
 ```
 
 Common status codes:
+
 - `400` - Bad request (validation failed)
 - `401` - Unauthorized (missing/invalid token)
 - `403` - Forbidden (insufficient permissions)
@@ -349,8 +350,8 @@ describe('POST /api/v1/jobs', () => {
       headers: { authorization: `Bearer ${token}` },
       payload: {
         type: 'send-email',
-        payload: { to: 'user@example.com' }
-      }
+        payload: { to: 'user@example.com' },
+      },
     });
 
     expect(response.statusCode).toBe(201);
@@ -364,8 +365,8 @@ describe('POST /api/v1/jobs', () => {
       headers: { authorization: `Bearer ${token}` },
       payload: {
         type: 'invalid-type',
-        payload: {}
-      }
+        payload: {},
+      },
     });
 
     expect(response.statusCode).toBe(400);
@@ -377,6 +378,7 @@ describe('POST /api/v1/jobs', () => {
 ## Dependencies
 
 Internal (from packages/):
+
 - `@job-queue/auth` - JWT & RBAC
 - `@job-queue/database` - Prisma client
 - `@job-queue/queue` - BullMQ wrapper
@@ -386,6 +388,7 @@ Internal (from packages/):
 - `@job-queue/shared` - Common types
 
 External:
+
 - `fastify` - Web framework
 - `@fastify/cors` - CORS plugin
 - `@fastify/rate-limit` - Rate limiting plugin

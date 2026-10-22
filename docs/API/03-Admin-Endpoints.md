@@ -86,11 +86,11 @@ All dependency checks are live per request (Redis `PING`, PostgreSQL `SELECT 1`)
 
 **Top-level `status` values:**
 
-| Value | Meaning |
-|-------|---------|
-| `ok` | All dependencies reachable, no stale workers |
+| Value      | Meaning                                                              |
+| ---------- | -------------------------------------------------------------------- |
+| `ok`       | All dependencies reachable, no stale workers                         |
 | `degraded` | At least one dependency slow or one worker stale — system functional |
-| `critical` | PostgreSQL or Redis unreachable — system non-functional |
+| `critical` | PostgreSQL or Redis unreachable — system non-functional              |
 
 **Response 503** when `status` is `critical`:
 
@@ -146,20 +146,20 @@ Same as `GET /jobs` but returns jobs across all users. Useful for support and mo
 
 **Query Parameters:** Identical to `GET /jobs` plus:
 
-| Param | Type | Default | Description |
-|-------|------|---------|-------------|
-| `userId` | UUID | — | Filter to a specific user's jobs |
-| `status` | string (comma-sep) | all | |
-| `type` | string | — | |
-| `queueName` | string | — | |
-| `tags` | string (comma-sep) | — | AND filter |
-| `search` | string | — | `ILIKE '%query%'` on `name` |
-| `limit` | int | 50 | Max 200 |
-| `offset` | int | 0 | |
-| `sortBy` | string | `createdAt` | `createdAt` \| `updatedAt` \| `priority` |
-| `sortOrder` | string | `DESC` | `ASC` \| `DESC` |
-| `from` | ISO 8601 | — | |
-| `to` | ISO 8601 | — | |
+| Param       | Type               | Default     | Description                              |
+| ----------- | ------------------ | ----------- | ---------------------------------------- |
+| `userId`    | UUID               | —           | Filter to a specific user's jobs         |
+| `status`    | string (comma-sep) | all         |                                          |
+| `type`      | string             | —           |                                          |
+| `queueName` | string             | —           |                                          |
+| `tags`      | string (comma-sep) | —           | AND filter                               |
+| `search`    | string             | —           | `ILIKE '%query%'` on `name`              |
+| `limit`     | int                | 50          | Max 200                                  |
+| `offset`    | int                | 0           |                                          |
+| `sortBy`    | string             | `createdAt` | `createdAt` \| `updatedAt` \| `priority` |
+| `sortOrder` | string             | `DESC`      | `ASC` \| `DESC`                          |
+| `from`      | ISO 8601           | —           |                                          |
+| `to`        | ISO 8601           | —           |                                          |
 
 **Response 200:**
 
@@ -192,14 +192,14 @@ Moves any non-terminal job directly to the dead letter queue without waiting for
 
 **Behavior by current status:**
 
-| Status | What happens |
-|--------|-------------|
-| `queued` | Removed from Redis queue immediately. Moved to DLQ. |
-| `delayed` | Removed from BullMQ delayed set immediately. Moved to DLQ. |
-| `failed` | No active worker. Moved to DLQ immediately. |
-| `paused` | No active worker. Moved to DLQ immediately. |
-| `active` | **Deferred** — see below. |
-| `completed`, `cancelled`, `dead_letter` | Rejected. `409 JOB_NOT_MOVABLE`. |
+| Status                                  | What happens                                               |
+| --------------------------------------- | ---------------------------------------------------------- |
+| `queued`                                | Removed from Redis queue immediately. Moved to DLQ.        |
+| `delayed`                               | Removed from BullMQ delayed set immediately. Moved to DLQ. |
+| `failed`                                | No active worker. Moved to DLQ immediately.                |
+| `paused`                                | No active worker. Moved to DLQ immediately.                |
+| `active`                                | **Deferred** — see below.                                  |
+| `completed`, `cancelled`, `dead_letter` | Rejected. `409 JOB_NOT_MOVABLE`.                           |
 
 **Active job edge case:**
 
@@ -271,9 +271,9 @@ Returns a mix of two data sources — live queue counts from BullMQ (Redis) and 
 
 **Query parameters:**
 
-| Param | Type | Default | Description |
-|-------|------|---------|-------------|
-| `window` | int (minutes) | `5` | Rolling time window for derived metrics. `1`–`60`. |
+| Param    | Type          | Default | Description                                        |
+| -------- | ------------- | ------- | -------------------------------------------------- |
+| `window` | int (minutes) | `5`     | Rolling time window for derived metrics. `1`–`60`. |
 
 **Response 200:**
 
@@ -309,16 +309,16 @@ Returns a mix of two data sources — live queue counts from BullMQ (Redis) and 
 
 **Field definitions:**
 
-| Field | Source | How calculated |
-|-------|--------|----------------|
-| `counts.*` | Redis (BullMQ) | Live queue state at request time |
-| `paused` | Redis key `queue:<name>:paused` | Accepts jobs, does not process |
-| `maintenance` | Redis key `queue:<name>:maintenance` | Rejects new jobs, does not process |
-| `counts.completed` | Redis | BullMQ in-memory counter — resets on Redis flush. Use `jobs` table for durable historical counts. |
-| `metrics.throughputPerMinute` | PostgreSQL | `COUNT(*) / windowMinutes` where `completedAt > NOW() - window` and `queueName = ?` |
-| `metrics.averageProcessingTimeMs` | PostgreSQL | `AVG(durationMs)` from `job_executions` joined to jobs in this queue, within the window |
-| `metrics.retryRate` | PostgreSQL | `COUNT(*) FILTER (WHERE retryCount > 0) / COUNT(*)` for completed jobs within the window. `0.08` = 8% of jobs required at least one retry. |
-| `metrics.windowMinutes` | — | Echo of the `window` query param used — makes cached responses self-describing |
+| Field                             | Source                               | How calculated                                                                                                                             |
+| --------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `counts.*`                        | Redis (BullMQ)                       | Live queue state at request time                                                                                                           |
+| `paused`                          | Redis key `queue:<name>:paused`      | Accepts jobs, does not process                                                                                                             |
+| `maintenance`                     | Redis key `queue:<name>:maintenance` | Rejects new jobs, does not process                                                                                                         |
+| `counts.completed`                | Redis                                | BullMQ in-memory counter — resets on Redis flush. Use `jobs` table for durable historical counts.                                          |
+| `metrics.throughputPerMinute`     | PostgreSQL                           | `COUNT(*) / windowMinutes` where `completedAt > NOW() - window` and `queueName = ?`                                                        |
+| `metrics.averageProcessingTimeMs` | PostgreSQL                           | `AVG(durationMs)` from `job_executions` joined to jobs in this queue, within the window                                                    |
+| `metrics.retryRate`               | PostgreSQL                           | `COUNT(*) FILTER (WHERE retryCount > 0) / COUNT(*)` for completed jobs within the window. `0.08` = 8% of jobs required at least one retry. |
+| `metrics.windowMinutes`           | —                                    | Echo of the `window` query param used — makes cached responses self-describing                                                             |
 
 **SQL for derived metrics (per queue, single query):**
 
@@ -348,11 +348,11 @@ WHERE j.queueName = $1
 
 Stops workers from picking up new jobs from this queue. Jobs already `active` continue to completion.
 
-| Mode | Accepts new jobs | Processes jobs |
-|------|-----------------|----------------|
-| Normal | Yes | Yes |
-| **Paused** | **Yes — 201, jobs wait** | **No** |
-| Maintenance | No — 503 rejected | No |
+| Mode        | Accepts new jobs         | Processes jobs |
+| ----------- | ------------------------ | -------------- |
+| Normal      | Yes                      | Yes            |
+| **Paused**  | **Yes — 201, jobs wait** | **No**         |
+| Maintenance | No — 503 rejected        | No             |
 
 **Submitting to a paused queue still returns `201 Created`.**  
 The job is accepted, stored in PostgreSQL, and pushed to Redis — it just won't be picked up until the queue resumes. From the client's perspective the request succeeded. This is intentional: the producer doesn't need to know or care about queue pause state.
@@ -415,13 +415,14 @@ Unpauses a queue. Workers begin picking up jobs immediately.
 
 Puts the queue into maintenance mode. Unlike pause, **new job submissions are rejected at the API layer** — clients receive `503 Service Unavailable` immediately rather than a queued job that silently waits.
 
-| Mode | Accepts new jobs | Processes jobs |
-|------|-----------------|----------------|
-| Normal | Yes | Yes |
-| Paused | Yes — 201, jobs wait | No |
-| **Maintenance** | **No — 503 rejected** | **No** |
+| Mode            | Accepts new jobs      | Processes jobs |
+| --------------- | --------------------- | -------------- |
+| Normal          | Yes                   | Yes            |
+| Paused          | Yes — 201, jobs wait  | No             |
+| **Maintenance** | **No — 503 rejected** | **No**         |
 
 Use maintenance mode when:
+
 - Running a database migration that affects job schema
 - Deploying a breaking change to a job handler
 - The downstream service a queue depends on is known to be down
@@ -466,7 +467,13 @@ Retry-After: 300
 
 ```json
 // 409 — already in maintenance
-{ "error": { "code": "QUEUE_ALREADY_IN_MAINTENANCE", "message": "Queue 'email' is already in maintenance mode", "statusCode": 409 } }
+{
+  "error": {
+    "code": "QUEUE_ALREADY_IN_MAINTENANCE",
+    "message": "Queue 'email' is already in maintenance mode",
+    "statusCode": 409
+  }
+}
 ```
 
 ---
@@ -516,12 +523,15 @@ Neither field alone is sufficient. Both must pass or the request is rejected wit
 ```typescript
 if (body.confirm !== queueName) {
   return res.status(400).json({
-    error: { code: 'CONFIRMATION_MISMATCH', message: `confirm must equal queue name '${queueName}'` }
+    error: {
+      code: 'CONFIRMATION_MISMATCH',
+      message: `confirm must equal queue name '${queueName}'`,
+    },
   });
 }
 if (body.force !== true) {
   return res.status(400).json({
-    error: { code: 'FORCE_REQUIRED', message: 'force must be boolean true' }
+    error: { code: 'FORCE_REQUIRED', message: 'force must be boolean true' },
   });
 }
 ```
@@ -615,7 +625,13 @@ The worker detects this via a Redis flag (`worker:<workerId>:drain`). It complet
 
 ```json
 // 404 — worker not found
-{ "error": { "code": "WORKER_NOT_FOUND", "message": "Worker 'worker-prod-99' not found", "statusCode": 404 } }
+{
+  "error": {
+    "code": "WORKER_NOT_FOUND",
+    "message": "Worker 'worker-prod-99' not found",
+    "statusCode": 404
+  }
+}
 ```
 
 ---
@@ -647,14 +663,14 @@ Removes a worker row from the database. Only valid for workers that are stale (n
 
 **Query parameters:**
 
-| Param | Type | Default | Description |
-|-------|------|---------|-------------|
-| `reviewed` | boolean | — | `true` = reviewed only, `false` = unreviewed only |
-| `reason` | string | — | Filter by failure reason |
-| `limit` | int | 50 | Max 200 |
-| `offset` | int | 0 | |
-| `sortBy` | string | `movedAt` | `movedAt` \| `failureCount` \| `replayCount` |
-| `sortOrder` | string | `DESC` | `ASC` \| `DESC` |
+| Param       | Type    | Default   | Description                                       |
+| ----------- | ------- | --------- | ------------------------------------------------- |
+| `reviewed`  | boolean | —         | `true` = reviewed only, `false` = unreviewed only |
+| `reason`    | string  | —         | Filter by failure reason                          |
+| `limit`     | int     | 50        | Max 200                                           |
+| `offset`    | int     | 0         |                                                   |
+| `sortBy`    | string  | `movedAt` | `movedAt` \| `failureCount` \| `replayCount`      |
+| `sortOrder` | string  | `DESC`    | `ASC` \| `DESC`                                   |
 
 **Response 200:**
 
@@ -777,15 +793,15 @@ Permanently removes the DLQ entry and soft-deletes the job. Irreversible.
 
 **Query parameters:**
 
-| Param | Type | Default | Description |
-|-------|------|---------|-------------|
-| `status` | string | `active` | `active` \| `suspended` \| `archived` |
-| `role` | string | — | `admin` \| `user` |
-| `search` | string | — | `ILIKE '%query%'` on `email`, `firstName`, `lastName` |
-| `limit` | int | 50 | Max 200 |
-| `offset` | int | 0 | |
-| `sortBy` | string | `createdAt` | `createdAt` \| `lastLoginAt` |
-| `sortOrder` | string | `DESC` | `ASC` \| `DESC` |
+| Param       | Type   | Default     | Description                                           |
+| ----------- | ------ | ----------- | ----------------------------------------------------- |
+| `status`    | string | `active`    | `active` \| `suspended` \| `archived`                 |
+| `role`      | string | —           | `admin` \| `user`                                     |
+| `search`    | string | —           | `ILIKE '%query%'` on `email`, `firstName`, `lastName` |
+| `limit`     | int    | 50          | Max 200                                               |
+| `offset`    | int    | 0           |                                                       |
+| `sortBy`    | string | `createdAt` | `createdAt` \| `lastLoginAt`                          |
+| `sortOrder` | string | `DESC`      | `ASC` \| `DESC`                                       |
 
 **Response 200:**
 
@@ -896,13 +912,13 @@ Submits a batch of synthetic jobs for testing worker throughput and queue behavi
 }
 ```
 
-| Field | Required | Notes |
-|-------|----------|-------|
-| `jobType` | Yes | Must be a known handler type |
-| `queueName` | Yes | Target queue |
-| `jobCount` | Yes | 1–1000 |
-| `concurrency` | No | How fast to submit jobs (per second). Default 10. |
-| `payloadTemplate` | No | Base payload — each job gets a `_loadTestIndex` field appended |
+| Field             | Required | Notes                                                          |
+| ----------------- | -------- | -------------------------------------------------------------- |
+| `jobType`         | Yes      | Must be a known handler type                                   |
+| `queueName`       | Yes      | Target queue                                                   |
+| `jobCount`        | Yes      | 1–1000                                                         |
+| `concurrency`     | No       | How fast to submit jobs (per second). Default 10.              |
+| `payloadTemplate` | No       | Base payload — each job gets a `_loadTestIndex` field appended |
 
 **Server steps:**
 
@@ -937,21 +953,21 @@ Submits a batch of synthetic jobs for testing worker throughput and queue behavi
 
 ## Error Code Reference
 
-| Code | Status | When |
-|------|--------|------|
-| `FORBIDDEN` | 403 | Authenticated user is not an admin |
-| `QUEUE_NOT_FOUND` | 404 | Queue name not in configured allowlist |
-| `QUEUE_ALREADY_PAUSED` | 409 | Pause called on already-paused queue |
-| `QUEUE_NOT_PAUSED` | 409 | Resume called on running queue |
-| `QUEUE_IN_MAINTENANCE` | 503 | Job submission rejected — queue in maintenance mode |
-| `QUEUE_ALREADY_IN_MAINTENANCE` | 409 | Maintenance called on already-in-maintenance queue |
-| `WORKER_NOT_FOUND` | 404 | Worker ID not in database |
-| `WORKER_STILL_ACTIVE` | 409 | Tried to delete a healthy worker |
-| `JOB_NOT_FOUND` | 404 | Job not found |
-| `JOB_ALREADY_IN_DLQ` | 409 | Move-to-DLQ called on already-dead-lettered job |
-| `JOB_NOT_MOVABLE` | 409 | Move-to-DLQ on terminal job (completed, cancelled) |
-| `SELF_MODIFICATION_FORBIDDEN` | 409 | Admin trying to change their own role/status |
-| `VALIDATION_ERROR` | 400 | Request body fails validation |
+| Code                           | Status | When                                                |
+| ------------------------------ | ------ | --------------------------------------------------- |
+| `FORBIDDEN`                    | 403    | Authenticated user is not an admin                  |
+| `QUEUE_NOT_FOUND`              | 404    | Queue name not in configured allowlist              |
+| `QUEUE_ALREADY_PAUSED`         | 409    | Pause called on already-paused queue                |
+| `QUEUE_NOT_PAUSED`             | 409    | Resume called on running queue                      |
+| `QUEUE_IN_MAINTENANCE`         | 503    | Job submission rejected — queue in maintenance mode |
+| `QUEUE_ALREADY_IN_MAINTENANCE` | 409    | Maintenance called on already-in-maintenance queue  |
+| `WORKER_NOT_FOUND`             | 404    | Worker ID not in database                           |
+| `WORKER_STILL_ACTIVE`          | 409    | Tried to delete a healthy worker                    |
+| `JOB_NOT_FOUND`                | 404    | Job not found                                       |
+| `JOB_ALREADY_IN_DLQ`           | 409    | Move-to-DLQ called on already-dead-lettered job     |
+| `JOB_NOT_MOVABLE`              | 409    | Move-to-DLQ on terminal job (completed, cancelled)  |
+| `SELF_MODIFICATION_FORBIDDEN`  | 409    | Admin trying to change their own role/status        |
+| `VALIDATION_ERROR`             | 400    | Request body fails validation                       |
 
 ---
 

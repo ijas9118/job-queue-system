@@ -32,9 +32,9 @@ describe('sendEmailHandler', () => {
     const result = await sendEmailHandler.execute({
       to: 'user@example.com',
       subject: 'Test',
-      template: 'welcome'
+      template: 'welcome',
     });
-    
+
     expect(result.messageId).toBeDefined();
   });
 
@@ -43,16 +43,17 @@ describe('sendEmailHandler', () => {
       sendEmailHandler.schema.parse({
         to: 'invalid-email',
         subject: 'Test',
-        template: 'welcome'
+        template: 'welcome',
       });
     }).toThrow();
   });
 
   it('retries on temporary failure', async () => {
-    const mockSend = vi.fn()
+    const mockSend = vi
+      .fn()
       .mockRejectedValueOnce(new Error('Temp failure'))
       .mockResolvedValueOnce({ id: 'msg-123' });
-    
+
     // Mock SMTP service
     // Test that retry works
   });
@@ -64,20 +65,20 @@ describe('sendEmailHandler', () => {
 ```typescript
 describe('calculateBackoff', () => {
   it('calculates exponential delays', () => {
-    expect(calculateBackoff(0)).toBeLessThan(2000);    // ~1s
-    expect(calculateBackoff(1)).toBeLessThan(6000);    // ~4s
-    expect(calculateBackoff(2)).toBeLessThan(20000);   // ~16s
+    expect(calculateBackoff(0)).toBeLessThan(2000); // ~1s
+    expect(calculateBackoff(1)).toBeLessThan(6000); // ~4s
+    expect(calculateBackoff(2)).toBeLessThan(20000); // ~16s
   });
 
   it('adds jitter', () => {
     const attempts = Array.from({ length: 100 }, () => calculateBackoff(1));
     const unique = new Set(attempts);
-    expect(unique.size).toBeGreaterThan(1);  // Not all the same
+    expect(unique.size).toBeGreaterThan(1); // Not all the same
   });
 
   it('caps at maximum delay', () => {
     const veryLate = calculateBackoff(20);
-    expect(veryLate).toBeLessThanOrEqual(3600000);  // 1 hour max
+    expect(veryLate).toBeLessThanOrEqual(3600000); // 1 hour max
   });
 });
 ```
@@ -105,14 +106,14 @@ describe('POST /api/v1/jobs', () => {
     app = await buildApp();
 
     const user = await db.users.create({
-      data: { email: 'test@example.com', passwordHash: await argon2.hash('password') }
+      data: { email: 'test@example.com', passwordHash: await argon2.hash('password') },
     });
     userId = user.id;
 
     const loginRes = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/login',
-      payload: { email: 'test@example.com', password: 'password' }
+      payload: { email: 'test@example.com', password: 'password' },
     });
     accessToken = loginRes.json().accessToken;
   });
@@ -127,7 +128,7 @@ describe('POST /api/v1/jobs', () => {
       method: 'POST',
       url: '/api/v1/jobs',
       headers: { authorization: `Bearer ${accessToken}` },
-      payload: { type: 'send-email', payload: { to: 'user@example.com' } }
+      payload: { type: 'send-email', payload: { to: 'user@example.com' } },
     });
 
     expect(response.statusCode).toBe(201);
@@ -140,7 +141,7 @@ describe('POST /api/v1/jobs', () => {
       method: 'POST',
       url: '/api/v1/jobs',
       headers: { authorization: `Bearer ${accessToken}` },
-      payload: { type: 'invalid-type', payload: {} }
+      payload: { type: 'invalid-type', payload: {} },
     });
 
     expect(response.statusCode).toBe(400);
@@ -151,16 +152,20 @@ describe('POST /api/v1/jobs', () => {
     const jobData = {
       type: 'send-email',
       payload: { to: 'user@example.com' },
-      idempotencyKey: 'test-123'
+      idempotencyKey: 'test-123',
     };
 
     const response1 = await app.inject({
-      method: 'POST', url: '/api/v1/jobs',
-      headers: { authorization: `Bearer ${accessToken}` }, payload: jobData
+      method: 'POST',
+      url: '/api/v1/jobs',
+      headers: { authorization: `Bearer ${accessToken}` },
+      payload: jobData,
     });
     const response2 = await app.inject({
-      method: 'POST', url: '/api/v1/jobs',
-      headers: { authorization: `Bearer ${accessToken}` }, payload: jobData
+      method: 'POST',
+      url: '/api/v1/jobs',
+      headers: { authorization: `Bearer ${accessToken}` },
+      payload: jobData,
     });
 
     expect(response1.json().id).toBe(response2.json().id);
@@ -170,7 +175,7 @@ describe('POST /api/v1/jobs', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/v1/jobs',
-      payload: { type: 'send-email', payload: {} }
+      payload: { type: 'send-email', payload: {} },
     });
 
     expect(response.statusCode).toBe(401);
@@ -184,43 +189,42 @@ describe('POST /api/v1/jobs', () => {
 describe('Retry Logic', () => {
   it('schedules retries with exponential backoff', async () => {
     const job = await submitJob({ type: 'flaky-job', payload: {} });
-    
+
     // First attempt
-    await processor.process(job);  // Fails
-    
+    await processor.process(job); // Fails
+
     let jobRecord = await db.jobs.findUnique(job.id);
     expect(jobRecord.status).toBe('delayed');
     expect(jobRecord.retryCount).toBe(1);
     expect(jobRecord.delayUntil).toBeDefined();
-    
+
     // Second attempt
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    await processor.process(job);  // Fails again
-    
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await processor.process(job); // Fails again
+
     jobRecord = await db.jobs.findUnique(job.id);
     expect(jobRecord.retryCount).toBe(2);
-    expect(jobRecord.delayUntil.getTime())
-      .toBeGreaterThan(Date.now() + 3000);  // 4s delay
+    expect(jobRecord.delayUntil.getTime()).toBeGreaterThan(Date.now() + 3000); // 4s delay
   });
 
   it('moves to DLQ after max retries', async () => {
-    const job = await submitJob({ 
-      type: 'always-fails', 
+    const job = await submitJob({
+      type: 'always-fails',
       payload: {},
-      maxRetries: 1
+      maxRetries: 1,
     });
-    
+
     // Attempt 1: Fails
     await processor.process(job);
-    
+
     // Attempt 2: Fails
     await processor.process(job);
-    
+
     const jobRecord = await db.jobs.findUnique(job.id);
     expect(jobRecord.status).toBe('dead_letter');
-    
+
     const dlqRecord = await db.deadLetterQueue.findUnique({
-      where: { jobId: job.id }
+      where: { jobId: job.id },
     });
     expect(dlqRecord).toBeDefined();
   });
@@ -278,7 +282,7 @@ test('failed job retries with backoff and eventually succeeds', async ({ page })
 
   const jobRow = page.locator('[data-testid=job-row]').first();
   await expect(jobRow).toContainText('FAILED', { timeout: 5000 });
-  await expect(jobRow).toContainText('DELAYED');           // retry scheduled
+  await expect(jobRow).toContainText('DELAYED'); // retry scheduled
   await expect(jobRow).toContainText('ACTIVE', { timeout: 15000 }); // retry fired
   await expect(jobRow).toContainText('COMPLETED', { timeout: 20000 });
 });
@@ -298,7 +302,9 @@ test('admin can inspect and replay a dead-lettered job', async ({ page }) => {
   await expect(page.locator('[data-testid=error-detail]')).toBeVisible();
 
   await page.click('text=Replay');
-  await expect(page.locator('[data-testid=job-row]').first()).toContainText('COMPLETED', { timeout: 10000 });
+  await expect(page.locator('[data-testid=job-row]').first()).toContainText('COMPLETED', {
+    timeout: 10000,
+  });
 });
 ```
 
@@ -306,15 +312,15 @@ test('admin can inspect and replay a dead-lettered job', async ({ page }) => {
 
 ## Test Coverage Goals
 
-| Component | Coverage | Priority |
-|-----------|----------|----------|
-| **Unit Tests** | 80%+ | High |
-| **Integration Tests** | 70%+ | High |
-| **API Routes** | 100% | Critical |
-| **Handlers** | 90%+ | High |
-| **RBAC Logic** | 100% | Critical |
-| **Retry Logic** | 95%+ | Critical |
-| **E2E Scenarios (Playwright)** | 5+ major paths, automated | Medium |
+| Component                      | Coverage                  | Priority |
+| ------------------------------ | ------------------------- | -------- |
+| **Unit Tests**                 | 80%+                      | High     |
+| **Integration Tests**          | 70%+                      | High     |
+| **API Routes**                 | 100%                      | Critical |
+| **Handlers**                   | 90%+                      | High     |
+| **RBAC Logic**                 | 100%                      | Critical |
+| **Retry Logic**                | 95%+                      | Critical |
+| **E2E Scenarios (Playwright)** | 5+ major paths, automated | Medium   |
 
 ---
 

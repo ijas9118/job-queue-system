@@ -24,19 +24,19 @@ CREATE TABLE users (
 
 ## Columns
 
-| Column | Type | Constraints | Purpose |
-|--------|------|-----------|---------|
-| `id` | UUID | PRIMARY KEY | Unique identifier |
-| `email` | VARCHAR(255) | NOT NULL, UNIQUE | Login email, unique per system |
-| `passwordHash` | VARCHAR(255) | NOT NULL | Argon2id hash of password |
-| `firstName` | VARCHAR(100) | Optional | User's first name |
-| `lastName` | VARCHAR(100) | Optional | User's last name |
-| `role` | VARCHAR(50) | NOT NULL, DEFAULT 'user' | 'admin' or 'user' |
-| `status` | VARCHAR(50) | NOT NULL, DEFAULT 'active' | 'active', 'suspended', 'archived' |
-| `lastLoginAt` | TIMESTAMP | Optional | Tracks last successful login |
-| `createdAt` | TIMESTAMP | NOT NULL, DEFAULT NOW() | Account creation time |
-| `updatedAt` | TIMESTAMP | NOT NULL, DEFAULT NOW() | Last profile update |
-| `deletedAt` | TIMESTAMP | Optional | Soft delete timestamp (NULL if active) |
+| Column         | Type         | Constraints                | Purpose                                |
+| -------------- | ------------ | -------------------------- | -------------------------------------- |
+| `id`           | UUID         | PRIMARY KEY                | Unique identifier                      |
+| `email`        | VARCHAR(255) | NOT NULL, UNIQUE           | Login email, unique per system         |
+| `passwordHash` | VARCHAR(255) | NOT NULL                   | Argon2id hash of password              |
+| `firstName`    | VARCHAR(100) | Optional                   | User's first name                      |
+| `lastName`     | VARCHAR(100) | Optional                   | User's last name                       |
+| `role`         | VARCHAR(50)  | NOT NULL, DEFAULT 'user'   | 'admin' or 'user'                      |
+| `status`       | VARCHAR(50)  | NOT NULL, DEFAULT 'active' | 'active', 'suspended', 'archived'      |
+| `lastLoginAt`  | TIMESTAMP    | Optional                   | Tracks last successful login           |
+| `createdAt`    | TIMESTAMP    | NOT NULL, DEFAULT NOW()    | Account creation time                  |
+| `updatedAt`    | TIMESTAMP    | NOT NULL, DEFAULT NOW()    | Last profile update                    |
+| `deletedAt`    | TIMESTAMP    | Optional                   | Soft delete timestamp (NULL if active) |
 
 ## Constraints
 
@@ -45,15 +45,15 @@ CREATE TABLE users (
 ALTER TABLE users ADD CONSTRAINT uq_users_email UNIQUE (email);
 
 -- Ensure role is valid
-ALTER TABLE users ADD CONSTRAINT ck_users_role 
+ALTER TABLE users ADD CONSTRAINT ck_users_role
   CHECK (role IN ('admin', 'user'));
 
 -- Ensure status is valid
-ALTER TABLE users ADD CONSTRAINT ck_users_status 
+ALTER TABLE users ADD CONSTRAINT ck_users_status
   CHECK (status IN ('active', 'suspended', 'archived'));
 
 -- deletedAt can only be set once (no "un-delete")
-ALTER TABLE users ADD CONSTRAINT ck_users_deletedAt 
+ALTER TABLE users ADD CONSTRAINT ck_users_deletedAt
   CHECK (deletedAt IS NULL OR updatedAt <= deletedAt);
 ```
 
@@ -68,6 +68,7 @@ CREATE INDEX idx_users_lastLoginAt ON users(lastLoginAt DESC);
 ```
 
 **Why**:
+
 - `email`: Primary authentication key, must be unique among active users
 - `role`: Dashboard queries (admin list, permissions check)
 - `createdAt`: Analytics, user registration trends
@@ -105,8 +106,8 @@ const user = await db.users.create({
     firstName: 'John',
     lastName: 'Doe',
     role: 'user',
-    status: 'active'
-  }
+    status: 'active',
+  },
 });
 ```
 
@@ -114,7 +115,7 @@ const user = await db.users.create({
 
 ```typescript
 const user = await db.users.findUnique({
-  where: { email: email }
+  where: { email: email },
 });
 
 if (user && user.deletedAt === null) {
@@ -122,7 +123,7 @@ if (user && user.deletedAt === null) {
   if (valid) {
     await db.users.update({
       where: { id: user.id },
-      data: { lastLoginAt: new Date() }
+      data: { lastLoginAt: new Date() },
     });
     // Issue JWT token
   }
@@ -133,7 +134,7 @@ if (user && user.deletedAt === null) {
 
 ```typescript
 const user = await db.users.findUnique({
-  where: { id: userId }
+  where: { id: userId },
 });
 
 if (user?.role !== 'admin') {
@@ -147,9 +148,9 @@ if (user?.role !== 'admin') {
 const activeUsers = await db.users.findMany({
   where: {
     status: 'active',
-    deletedAt: null
+    deletedAt: null,
   },
-  orderBy: { lastLoginAt: 'desc' }
+  orderBy: { lastLoginAt: 'desc' },
 });
 ```
 
@@ -160,8 +161,8 @@ await db.users.update({
   where: { id: userId },
   data: {
     deletedAt: new Date(),
-    status: 'archived'
-  }
+    status: 'archived',
+  },
 });
 ```
 
@@ -171,9 +172,9 @@ await db.users.update({
 const inactiveUsers = await db.users.findMany({
   where: {
     lastLoginAt: {
-      lt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) // 90 days ago
-    }
-  }
+      lt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 90 days ago
+    },
+  },
 });
 ```
 

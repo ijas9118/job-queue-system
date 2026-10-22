@@ -8,18 +8,18 @@ Format: a light version of Michael Nygard's ADR template (see `0000-template.md`
 
 ## Index
 
-| # | Decision | Status |
-|---|----------|--------|
-| [0001](0001-bullmq-owns-retries.md) | BullMQ owns retries and backoff | Accepted |
-| [0002](0002-commit-then-enqueue-with-reconciler.md) | Commit to Postgres, then enqueue, with a reconciler | Accepted |
-| [0003](0003-stored-job-states.md) | Six stored job states; pause whole queues only | Accepted |
-| [0004](0004-backoff-full-jitter.md) | Exponential backoff with full jitter | Accepted |
-| [0005](0005-execution-history-model.md) | One execution row per attempt, inserted at start, finalized once | Accepted |
-| [0006](0006-audit-log-scope.md) | Audit log holds human and security actions only | Accepted |
-| [0007](0007-worker-liveness-in-redis.md) | Worker liveness in Redis TTL keys | Accepted |
-| [0008](0008-initial-job-types.md) | Four initial job types | Accepted |
-| [0009](0009-refresh-token-in-httponly-cookie.md) | Refresh token in an HttpOnly cookie | Accepted |
-| [0010](0010-local-first-deployment.md) | Local Docker Compose first; cloud decided at M12 | Accepted |
+| #                                                   | Decision                                                         | Status   |
+| --------------------------------------------------- | ---------------------------------------------------------------- | -------- |
+| [0001](0001-bullmq-owns-retries.md)                 | BullMQ owns retries and backoff                                  | Accepted |
+| [0002](0002-commit-then-enqueue-with-reconciler.md) | Commit to Postgres, then enqueue, with a reconciler              | Accepted |
+| [0003](0003-stored-job-states.md)                   | Six stored job states; pause whole queues only                   | Accepted |
+| [0004](0004-backoff-full-jitter.md)                 | Exponential backoff with full jitter                             | Accepted |
+| [0005](0005-execution-history-model.md)             | One execution row per attempt, inserted at start, finalized once | Accepted |
+| [0006](0006-audit-log-scope.md)                     | Audit log holds human and security actions only                  | Accepted |
+| [0007](0007-worker-liveness-in-redis.md)            | Worker liveness in Redis TTL keys                                | Accepted |
+| [0008](0008-initial-job-types.md)                   | Four initial job types                                           | Accepted |
+| [0009](0009-refresh-token-in-httponly-cookie.md)    | Refresh token in an HttpOnly cookie                              | Accepted |
+| [0010](0010-local-first-deployment.md)              | Local Docker Compose first; cloud decided at M12                 | Accepted |
 
 ## Adding a new ADR
 
