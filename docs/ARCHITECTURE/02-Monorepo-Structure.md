@@ -5,6 +5,7 @@
 Packages should be earned, not scaffolded on day one. Starting with a package per concern (`auth`, `handlers`, `logger`, `metrics`, `queue`, `database`, `config`, `shared`) looks organized, but it's easy to end up building "microservices architecture inside a monorepo" for code that only one app ever imports. Good architecture is clear boundaries, not maximum package count.
 
 **Start with**:
+
 ```
 apps/
 ├── api/
@@ -19,6 +20,7 @@ packages/
 ```
 
 **Extract into a package only when a second consumer needs the identical code** — not preemptively:
+
 - `auth/` — starts as `apps/api/src/auth/` (JWT + RBAC). Extract to `packages/auth` only if the worker or another service genuinely needs to verify tokens too.
 - `handlers/` — starts as `apps/worker/src/handlers/`. Extract only if the API needs the same job-payload Zod schemas for pre-validation before enqueueing.
 - `logger/`, `metrics/` — in this project both api and worker do need consistent structured logging and metrics from early on, so extracting these two is justified sooner than `auth`/`handlers`. The test either way is "does a second real consumer exist," not "does this feel like it should be reusable."
@@ -255,10 +257,7 @@ job-queue-system/                    # Root monorepo
   "description": "Distributed job queue system",
   "packageManager": "pnpm@<current stable>",
   "pnpm": {
-    "workspaces": [
-      "apps/*",
-      "packages/*"
-    ]
+    "workspaces": ["apps/*", "packages/*"]
   },
   "scripts": {
     "dev": "pnpm -r --parallel run dev",
@@ -292,14 +291,14 @@ catalogs:
     # Pin to whatever the current stable release is at implementation time —
     # exact numbers belong in the lockfile, not hardcoded in docs.
     fastify: ^<current>
-    "@angular/core": ^<current>
+    '@angular/core': ^<current>
     redis: ^<current>
     bullmq: ^<current>
     prisma: ^<current>
     pino: ^<current>
     zod: ^<current>
     vitest: ^<current>
-    "@playwright/test": ^<current>
+    '@playwright/test': ^<current>
 ```
 
 ## Dependency Structure

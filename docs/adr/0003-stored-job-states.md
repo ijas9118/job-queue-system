@@ -21,14 +21,14 @@ The docs also disagree on whether `dead_letter` is terminal or can be replayed.
 
 `jobs.status` will hold exactly six values:
 
-| State | Meaning |
-|-------|---------|
-| queued | Waiting to be picked up |
-| active | A worker is running it |
-| delayed | Waiting for a scheduled time or a retry backoff |
-| completed | Succeeded (terminal) |
+| State       | Meaning                                                                               |
+| ----------- | ------------------------------------------------------------------------------------- |
+| queued      | Waiting to be picked up                                                               |
+| active      | A worker is running it                                                                |
+| delayed     | Waiting for a scheduled time or a retry backoff                                       |
+| completed   | Succeeded (terminal)                                                                  |
 | dead_letter | Retries exhausted or permanent error; only an explicit replay moves it back to queued |
-| cancelled | Stopped by a user or admin (terminal) |
+| cancelled   | Stopped by a user or admin (terminal)                                                 |
 
 Each failed attempt is recorded as an execution row and an event
 (`job:failed`), not as a stored status. Pausing is a queue-level admin

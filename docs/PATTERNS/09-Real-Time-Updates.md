@@ -40,7 +40,7 @@ Real-time feel
 import { Server } from 'socket.io';
 
 const io = new Server(httpServer, {
-  cors: { origin: 'http://localhost:3001' }
+  cors: { origin: 'http://localhost:3001' },
 });
 
 io.on('connection', (socket) => {
@@ -72,25 +72,33 @@ Via Angular's `SocketService` + `JobsService` (RxJS-wrapped socket, signal-backe
 this.socket.connect(this.auth.accessToken()!);
 this.socket.emit('subscribe', { channel: 'jobs', filters: { userId: this.auth.user()?.id } });
 
-this.socket.on<Job>('job:created').subscribe(job =>
-  this.jobsSubject.next([job, ...this.jobsSubject.value])
-);
+this.socket
+  .on<Job>('job:created')
+  .subscribe((job) => this.jobsSubject.next([job, ...this.jobsSubject.value]));
 
-this.socket.on<{ jobId: string }>('job:started').subscribe(data =>
-  this.jobsSubject.next(
-    this.jobsSubject.value.map(j => (j.id === data.jobId ? { ...j, status: 'active' } : j))
-  )
-);
+this.socket
+  .on<{ jobId: string }>('job:started')
+  .subscribe((data) =>
+    this.jobsSubject.next(
+      this.jobsSubject.value.map((j) => (j.id === data.jobId ? { ...j, status: 'active' } : j))
+    )
+  );
 
-this.socket.on<{ jobId: string; progress: number }>('job:progress').subscribe(data =>
-  this.jobsSubject.next(
-    this.jobsSubject.value.map(j => (j.id === data.jobId ? { ...j, progress: data.progress } : j))
-  )
-);
+this.socket
+  .on<{ jobId: string; progress: number }>('job:progress')
+  .subscribe((data) =>
+    this.jobsSubject.next(
+      this.jobsSubject.value.map((j) =>
+        j.id === data.jobId ? { ...j, progress: data.progress } : j
+      )
+    )
+  );
 
-this.socket.on<Job>('job:completed').subscribe(job =>
-  this.jobsSubject.next(this.jobsSubject.value.map(j => (j.id === job.id ? job : j)))
-);
+this.socket
+  .on<Job>('job:completed')
+  .subscribe((job) =>
+    this.jobsSubject.next(this.jobsSubject.value.map((j) => (j.id === job.id ? job : j)))
+  );
 ```
 
 ## Events
@@ -125,13 +133,13 @@ queue:stats        → Queue metrics (every 5s)
 
 ## Benefits
 
-| Benefit | How |
-|---------|-----|
-| **Real-time** | Updates push immediately |
-| **Efficient** | No polling overhead |
-| **Interactive** | Users see changes instantly |
-| **Scalable** | Socket.IO handles many connections |
-| **Bidirectional** | Client can send, server can send |
+| Benefit           | How                                |
+| ----------------- | ---------------------------------- |
+| **Real-time**     | Updates push immediately           |
+| **Efficient**     | No polling overhead                |
+| **Interactive**   | Users see changes instantly        |
+| **Scalable**      | Socket.IO handles many connections |
+| **Bidirectional** | Client can send, server can send   |
 
 ## Testing
 
@@ -139,17 +147,17 @@ queue:stats        → Queue metrics (every 5s)
 describe('WebSocket Updates', () => {
   it('broadcasts job:completed event', (done) => {
     const socket = io('http://localhost:3000');
-    
+
     socket.on('connect', () => {
       socket.emit('subscribe', { channel: 'jobs' });
     });
-    
+
     socket.on('job:completed', (job) => {
       expect(job.status).toBe('completed');
       socket.disconnect();
       done();
     });
-    
+
     // Simulate job completion
     broadcastJobUpdate({ ...job, status: 'completed' });
   });
@@ -159,25 +167,25 @@ describe('WebSocket Updates', () => {
     const socket1 = io('http://localhost:3000');
     // Client 2 subscribes to workers
     const socket2 = io('http://localhost:3000');
-    
+
     socket1.on('connect', () => {
       socket1.emit('subscribe', { channel: 'jobs' });
     });
-    
+
     socket2.on('connect', () => {
       socket2.emit('subscribe', { channel: 'workers' });
     });
-    
+
     socket1.on('job:completed', () => {
       // Socket1 gets it
       expect(true).toBe(true);
     });
-    
+
     socket2.on('job:completed', () => {
       // Socket2 doesn't get it
       fail('Should not receive job events');
     });
-    
+
     broadcastJobUpdate(job);
   });
 });

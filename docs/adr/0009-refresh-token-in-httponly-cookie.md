@@ -18,7 +18,7 @@ full account takeover.
   kept only in memory in the dashboard and sent as `Authorization: Bearer`.
 - Refresh token: random 256-bit opaque value, stored server-side as a SHA-256
   hash, sent as a cookie with `HttpOnly; Secure; SameSite=Lax;
-  Path=/api/v1/auth`, 7 days.
+Path=/api/v1/auth`, 7 days.
 - Rotation on every refresh; tokens belong to a family, and reuse of an old
   token revokes the whole family and is audit-logged.
 - CSRF: refresh and logout require a custom header (for example

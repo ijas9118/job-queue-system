@@ -45,21 +45,21 @@ interface User {
 
 // Permission checks
 function canViewJob(user: User, job: Job): boolean {
-  if (user.role === 'admin') return true;  // Admin sees all
-  return job.userId === user.id;           // User sees own
+  if (user.role === 'admin') return true; // Admin sees all
+  return job.userId === user.id; // User sees own
 }
 
 function canRetryJob(user: User, job: Job): boolean {
-  if (user.role === 'admin') return true;  // Admin retries any
-  return job.userId === user.id;           // User retries own
+  if (user.role === 'admin') return true; // Admin retries any
+  return job.userId === user.id; // User retries own
 }
 
 function canAccessDLQ(user: User): boolean {
-  return user.role === 'admin';            // Admin only
+  return user.role === 'admin'; // Admin only
 }
 
 function canRunLoadTests(user: User): boolean {
-  return user.role === 'admin';            // Admin only
+  return user.role === 'admin'; // Admin only
 }
 ```
 
@@ -71,7 +71,7 @@ export function requireAdmin() {
   return async (req: FastifyRequest, reply: FastifyReply) => {
     if (req.user?.role !== 'admin') {
       return reply.status(403).send({
-        error: { code: 'FORBIDDEN', message: 'Admin required' }
+        error: { code: 'FORBIDDEN', message: 'Admin required' },
       });
     }
   };
@@ -135,22 +135,22 @@ CREATE POLICY user_jobs_policy ON jobs
 describe('RBAC', () => {
   it('allows admin to view all jobs', async () => {
     const admin = { role: 'admin', id: 'user-123' };
-    const job = { userId: 'user-456' };  // Someone else's job
-    
+    const job = { userId: 'user-456' }; // Someone else's job
+
     expect(canViewJob(admin, job)).toBe(true);
   });
 
   it('prevents user from viewing others jobs', async () => {
     const user = { role: 'user', id: 'user-123' };
-    const job = { userId: 'user-456' };  // Someone else's job
-    
+    const job = { userId: 'user-456' }; // Someone else's job
+
     expect(canViewJob(user, job)).toBe(false);
   });
 
   it('allows user to view own jobs', async () => {
     const user = { role: 'user', id: 'user-123' };
-    const job = { userId: 'user-123' };  // Own job
-    
+    const job = { userId: 'user-123' }; // Own job
+
     expect(canViewJob(user, job)).toBe(true);
   });
 

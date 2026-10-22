@@ -3,10 +3,12 @@
 ## The Problem
 
 **Single database choice**:
+
 - Fast database (Redis): Can't persist reliably
 - Durable database (PostgreSQL): Too slow for queue
 
 **Using only one forces trade-offs**:
+
 - Only Redis: Lose data on crash
 - Only PostgreSQL: Queries too slow
 
@@ -56,6 +58,7 @@ PostgreSQL owns:
 ### On Crash
 
 **Redis crashes:**
+
 ```
 Workers can't get new jobs
 But database still has all job records
@@ -65,6 +68,7 @@ No data loss (jobs were in Redis, but also queued in DB)
 ```
 
 **PostgreSQL crashes:**
+
 ```
 Can't store results
 But Redis queue still has active jobs
@@ -99,13 +103,13 @@ Via BullMQ:
 
 ## Performance Comparison
 
-| Operation | Storage | Latency | Trade-off |
-|-----------|---------|---------|-----------|
-| **Queue job** | Redis | ~10ms | Fast add to queue |
-| **Get next job** | Redis | ~5ms | Instant availability |
-| **Store result** | PostgreSQL | ~50ms | Durable storage |
-| **Query history** | PostgreSQL | ~100ms | Consistent data |
-| **Real-time updates** | Redis Pub/Sub | ~50ms | Live events |
+| Operation             | Storage       | Latency | Trade-off            |
+| --------------------- | ------------- | ------- | -------------------- |
+| **Queue job**         | Redis         | ~10ms   | Fast add to queue    |
+| **Get next job**      | Redis         | ~5ms    | Instant availability |
+| **Store result**      | PostgreSQL    | ~50ms   | Durable storage      |
+| **Query history**     | PostgreSQL    | ~100ms  | Consistent data      |
+| **Real-time updates** | Redis Pub/Sub | ~50ms   | Live events          |
 
 ## Benefits
 
@@ -146,31 +150,31 @@ Loss: 10 seconds, jobs held in memory/Redis, no corruption
 describe('Separation of Concerns', () => {
   it('stores job in PostgreSQL', async () => {
     const job = await submitJob(jobData);
-    
+
     const dbRecord = await db.jobs.findUnique(job.id);
     expect(dbRecord).toBeDefined();
   });
 
   it('queues job in Redis', async () => {
     const job = await submitJob(jobData);
-    
+
     const redisJob = await queue.get(job.id);
     expect(redisJob).toBeDefined();
   });
 
   it('survives Redis crash (data in PostgreSQL)', async () => {
     const job = await submitJob(jobData);
-    
+
     // Simulate Redis crash
     await redis.flushAll();
-    
+
     // Job still in PostgreSQL
     const dbRecord = await db.jobs.findUnique(job.id);
     expect(dbRecord).toBeDefined();
-    
+
     // Can rebuild Redis from PostgreSQL
     await rebuildQueueFromDatabase();
-    
+
     const redisJob = await queue.get(job.id);
     expect(redisJob).toBeDefined();
   });

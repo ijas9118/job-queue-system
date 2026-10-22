@@ -7,17 +7,17 @@ Every error response uses this shape, regardless of endpoint:
 ```typescript
 interface ErrorResponse {
   error: {
-    code: string;        // Machine-readable, stable across versions
-    message: string;     // Human-readable, may change — do not parse
-    statusCode: number;  // Mirrors the HTTP status code
-    requestId: string;   // For tracing — same as X-Request-ID header
-    timestamp: string;   // ISO 8601
-    details?: FieldError[];  // Only present on validation errors
+    code: string; // Machine-readable, stable across versions
+    message: string; // Human-readable, may change — do not parse
+    statusCode: number; // Mirrors the HTTP status code
+    requestId: string; // For tracing — same as X-Request-ID header
+    timestamp: string; // ISO 8601
+    details?: FieldError[]; // Only present on validation errors
   };
 }
 
 interface FieldError {
-  field: string;   // Dot-notation path: "payload.to", "tags[0]"
+  field: string; // Dot-notation path: "payload.to", "tags[0]"
   message: string; // What's wrong with this field
   received?: unknown; // The value that was rejected (omitted for passwords)
 }
@@ -35,7 +35,11 @@ interface FieldError {
     "timestamp": "2026-08-06T10:00:00Z",
     "details": [
       { "field": "maxRetries", "message": "Must be between 0 and 10", "received": 99 },
-      { "field": "payload.to", "message": "Must be a valid email address", "received": "not-an-email" }
+      {
+        "field": "payload.to",
+        "message": "Must be a valid email address",
+        "received": "not-an-email"
+      }
     ]
   }
 }
@@ -59,17 +63,17 @@ interface FieldError {
 
 ## HTTP Status Code Usage
 
-| Code | Used for | Notes |
-|------|----------|-------|
-| `400` | Validation errors, malformed requests | Always includes `details` array |
-| `401` | Missing, expired, or invalid token | Client must re-authenticate |
-| `403` | Authenticated but not authorized | Don't reveal why — return generic message |
-| `404` | Resource not found, or forbidden (to avoid enumeration) | See note below |
-| `409` | State conflict — request is valid but wrong for current state | e.g. retrying a completed job |
-| `413` | Payload too large | |
-| `429` | Rate limit exceeded | Always includes `Retry-After` header |
-| `500` | Unhandled server error | Never leaks internals — log internally, return generic message |
-| `503` | Dependency unreachable, or queue in maintenance | Includes `Retry-After` header |
+| Code  | Used for                                                      | Notes                                                          |
+| ----- | ------------------------------------------------------------- | -------------------------------------------------------------- |
+| `400` | Validation errors, malformed requests                         | Always includes `details` array                                |
+| `401` | Missing, expired, or invalid token                            | Client must re-authenticate                                    |
+| `403` | Authenticated but not authorized                              | Don't reveal why — return generic message                      |
+| `404` | Resource not found, or forbidden (to avoid enumeration)       | See note below                                                 |
+| `409` | State conflict — request is valid but wrong for current state | e.g. retrying a completed job                                  |
+| `413` | Payload too large                                             |                                                                |
+| `429` | Rate limit exceeded                                           | Always includes `Retry-After` header                           |
+| `500` | Unhandled server error                                        | Never leaks internals — log internally, return generic message |
+| `503` | Dependency unreachable, or queue in maintenance               | Includes `Retry-After` header                                  |
 
 **400 vs 409:** Use `400` when the request itself is malformed (bad types, missing fields). Use `409` when the request is structurally valid but conflicts with current state (cancelling an already-cancelled job). A `400` means "fix your request." A `409` means "your request is fine, but the timing is wrong."
 
@@ -85,62 +89,62 @@ interface FieldError {
 
 Client must re-authenticate before retrying.
 
-| Code | HTTP | Trigger |
-|------|------|---------|
-| `MISSING_TOKEN` | 401 | No `Authorization` header |
-| `INVALID_TOKEN` | 401 | Token fails signature verification |
-| `TOKEN_EXPIRED` | 401 | `exp` claim is in the past |
-| `TOKEN_REVOKED` | 401 | `jti` found in Redis blacklist |
-| `INVALID_CREDENTIALS` | 401 | Wrong email or password (intentionally vague) |
-| `ACCOUNT_SUSPENDED` | 403 | User `status = 'suspended'` |
-| `SESSION_COMPROMISED` | 401 | Refresh token reuse detected — all sessions revoked |
+| Code                  | HTTP | Trigger                                             |
+| --------------------- | ---- | --------------------------------------------------- |
+| `MISSING_TOKEN`       | 401  | No `Authorization` header                           |
+| `INVALID_TOKEN`       | 401  | Token fails signature verification                  |
+| `TOKEN_EXPIRED`       | 401  | `exp` claim is in the past                          |
+| `TOKEN_REVOKED`       | 401  | `jti` found in Redis blacklist                      |
+| `INVALID_CREDENTIALS` | 401  | Wrong email or password (intentionally vague)       |
+| `ACCOUNT_SUSPENDED`   | 403  | User `status = 'suspended'`                         |
+| `SESSION_COMPROMISED` | 401  | Refresh token reuse detected — all sessions revoked |
 
 ### 2. Authorization Errors
 
 Client is authenticated but lacks permission. Do not retry without a role change.
 
-| Code | HTTP | Trigger |
-|------|------|---------|
-| `FORBIDDEN` | 403 | Correct role required (e.g. non-admin hitting `/admin/*`) |
+| Code        | HTTP | Trigger                                                   |
+| ----------- | ---- | --------------------------------------------------------- |
+| `FORBIDDEN` | 403  | Correct role required (e.g. non-admin hitting `/admin/*`) |
 
 ### 3. Validation Errors
 
 Fix the request before retrying.
 
-| Code | HTTP | Trigger |
-|------|------|---------|
-| `VALIDATION_ERROR` | 400 | Zod schema failure — always includes `details` |
-| `PAYLOAD_TOO_LARGE` | 413 | Job payload exceeds 1MB |
-| `UNKNOWN_QUEUE` | 400 | `queueName` not in configured allowlist |
-| `CONFIRMATION_MISMATCH` | 400 | Destructive operation confirmation string wrong |
-| `FORCE_REQUIRED` | 400 | `force: true` not provided for destructive operation |
+| Code                    | HTTP | Trigger                                              |
+| ----------------------- | ---- | ---------------------------------------------------- |
+| `VALIDATION_ERROR`      | 400  | Zod schema failure — always includes `details`       |
+| `PAYLOAD_TOO_LARGE`     | 413  | Job payload exceeds 1MB                              |
+| `UNKNOWN_QUEUE`         | 400  | `queueName` not in configured allowlist              |
+| `CONFIRMATION_MISMATCH` | 400  | Destructive operation confirmation string wrong      |
+| `FORCE_REQUIRED`        | 400  | `force: true` not provided for destructive operation |
 
 ### 4. State Conflict Errors
 
 Request is valid but conflicts with current resource state.
 
-| Code | HTTP | Trigger |
-|------|------|---------|
-| `JOB_NOT_FOUND` | 404 | Job doesn't exist or belongs to another user |
-| `JOB_NOT_RETRYABLE` | 409 | Retry on non-failed job |
-| `JOB_NOT_CANCELLABLE` | 409 | Cancel on terminal job |
-| `JOB_NOT_MOVABLE` | 409 | Move-to-DLQ on terminal job |
-| `JOB_ALREADY_IN_DLQ` | 409 | Move-to-DLQ on already-dead-lettered job |
-| `QUEUE_NOT_FOUND` | 404 | Queue name unknown |
-| `QUEUE_ALREADY_PAUSED` | 409 | Pause on already-paused queue |
-| `QUEUE_NOT_PAUSED` | 409 | Resume on running queue |
-| `QUEUE_ALREADY_IN_MAINTENANCE` | 409 | Maintenance on already-in-maintenance queue |
-| `WORKER_NOT_FOUND` | 404 | Worker ID not in database |
-| `WORKER_STILL_ACTIVE` | 409 | Delete on healthy worker |
-| `SELF_MODIFICATION_FORBIDDEN` | 409 | Admin changing own role or status |
+| Code                           | HTTP | Trigger                                      |
+| ------------------------------ | ---- | -------------------------------------------- |
+| `JOB_NOT_FOUND`                | 404  | Job doesn't exist or belongs to another user |
+| `JOB_NOT_RETRYABLE`            | 409  | Retry on non-failed job                      |
+| `JOB_NOT_CANCELLABLE`          | 409  | Cancel on terminal job                       |
+| `JOB_NOT_MOVABLE`              | 409  | Move-to-DLQ on terminal job                  |
+| `JOB_ALREADY_IN_DLQ`           | 409  | Move-to-DLQ on already-dead-lettered job     |
+| `QUEUE_NOT_FOUND`              | 404  | Queue name unknown                           |
+| `QUEUE_ALREADY_PAUSED`         | 409  | Pause on already-paused queue                |
+| `QUEUE_NOT_PAUSED`             | 409  | Resume on running queue                      |
+| `QUEUE_ALREADY_IN_MAINTENANCE` | 409  | Maintenance on already-in-maintenance queue  |
+| `WORKER_NOT_FOUND`             | 404  | Worker ID not in database                    |
+| `WORKER_STILL_ACTIVE`          | 409  | Delete on healthy worker                     |
+| `SELF_MODIFICATION_FORBIDDEN`  | 409  | Admin changing own role or status            |
 
 ### 5. Rate Limit Errors
 
 Retry after the `Retry-After` header value.
 
-| Code | HTTP | Trigger |
-|------|------|---------|
-| `RATE_LIMITED` | 429 | Global or per-endpoint limit exceeded |
+| Code           | HTTP | Trigger                               |
+| -------------- | ---- | ------------------------------------- |
+| `RATE_LIMITED` | 429  | Global or per-endpoint limit exceeded |
 
 ```
 HTTP/1.1 429 Too Many Requests
@@ -154,26 +158,26 @@ X-RateLimit-Reset: 1754476800
 
 Transient — safe to retry with backoff.
 
-| Code | HTTP | Trigger |
-|------|------|---------|
-| `INTERNAL_ERROR` | 500 | Unhandled exception — details logged, not returned |
-| `QUEUE_IN_MAINTENANCE` | 503 | Job submitted to queue in maintenance mode |
-| `SERVICE_UNAVAILABLE` | 503 | PostgreSQL or Redis unreachable |
+| Code                   | HTTP | Trigger                                            |
+| ---------------------- | ---- | -------------------------------------------------- |
+| `INTERNAL_ERROR`       | 500  | Unhandled exception — details logged, not returned |
+| `QUEUE_IN_MAINTENANCE` | 503  | Job submitted to queue in maintenance mode         |
+| `SERVICE_UNAVAILABLE`  | 503  | PostgreSQL or Redis unreachable                    |
 
 ---
 
 ## Retryability
 
-| Category | Retryable? | Strategy |
-|----------|-----------|----------|
-| Auth (401) | Only after re-authenticating | Refresh token, then retry once |
-| Auth (403) | No | User needs different permissions |
-| Validation (400, 413) | No — fix the request first | |
-| State conflict (409) | Maybe — depends on the conflict | Check current state before retrying |
-| Not found (404) | No | |
-| Rate limit (429) | Yes | Wait `Retry-After` seconds |
-| Server error (500) | Yes | Exponential backoff, max 3 attempts |
-| Service unavailable (503) | Yes | Wait `Retry-After` seconds |
+| Category                  | Retryable?                      | Strategy                            |
+| ------------------------- | ------------------------------- | ----------------------------------- |
+| Auth (401)                | Only after re-authenticating    | Refresh token, then retry once      |
+| Auth (403)                | No                              | User needs different permissions    |
+| Validation (400, 413)     | No — fix the request first      |                                     |
+| State conflict (409)      | Maybe — depends on the conflict | Check current state before retrying |
+| Not found (404)           | No                              |                                     |
+| Rate limit (429)          | Yes                             | Wait `Retry-After` seconds          |
+| Server error (500)        | Yes                             | Exponential backoff, max 3 attempts |
+| Service unavailable (503) | Yes                             | Wait `Retry-After` seconds          |
 
 **409 retryability nuance:** A `JOB_NOT_RETRYABLE` (retrying a completed job) is never retryable — the state won't change. A `QUEUE_ALREADY_PAUSED` is retryable if you're writing idempotent infra scripts — the queue is already in the desired state, treat it as success.
 
@@ -210,8 +214,8 @@ fastify.setErrorHandler((error, request, reply) => {
         statusCode: error.statusCode,
         requestId,
         timestamp: new Date().toISOString(),
-        ...(error.details && { details: error.details })
-      }
+        ...(error.details && { details: error.details }),
+      },
     });
   }
 
@@ -223,13 +227,14 @@ fastify.setErrorHandler((error, request, reply) => {
       message: 'An unexpected error occurred',
       statusCode: 500,
       requestId,
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    },
   });
 });
 ```
 
 **Key differences from Express:**
+
 - `setErrorHandler` replaces the 4-argument `(err, req, res, next)` middleware pattern
 - `request` / `reply` instead of `req` / `res`
 - `reply.status(n).send(body)` instead of `res.status(n).json(body)`
@@ -249,7 +254,7 @@ const fastify = Fastify({
   logger: {
     level: config.LOG_LEVEL,
     // Pino is built-in — structured JSON logging with no extra setup
-  }
+  },
 });
 ```
 
@@ -279,14 +284,14 @@ throw new AppError('VALIDATION_ERROR', 'Validation failed', 400, zodErrors);
 
 ### What Gets Logged
 
-| Error type | Log level | Includes stack trace? |
-|------------|-----------|----------------------|
-| Auth errors (401/403) | `warn` | No |
-| Validation errors (400) | `info` | No |
-| State conflicts (409) | `warn` | No |
-| Rate limits (429) | `info` | No |
-| Unhandled (500) | `error` | Yes — server-side only |
-| System unavailable (503) | `error` | Yes — server-side only |
+| Error type               | Log level | Includes stack trace?  |
+| ------------------------ | --------- | ---------------------- |
+| Auth errors (401/403)    | `warn`    | No                     |
+| Validation errors (400)  | `info`    | No                     |
+| State conflicts (409)    | `warn`    | No                     |
+| Rate limits (429)        | `info`    | No                     |
+| Unhandled (500)          | `error`   | Yes — server-side only |
+| System unavailable (503) | `error`   | Yes — server-side only |
 
 Stack traces are never sent to the client. They are logged with the `requestId` via Pino (Fastify's built-in logger) so they can be retrieved by support when a client reports an error.
 

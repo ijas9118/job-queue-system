@@ -3,6 +3,7 @@
 ## Purpose
 
 Archive for jobs that have failed permanently after all retries exhausted. Separate table allows admin to:
+
 - Review why jobs failed
 - Inspect and debug issues
 - Replay jobs with fixes
@@ -24,7 +25,7 @@ CREATE TABLE dead_letter_queue (
   reviewedBy UUID,
   replayedAt TIMESTAMP,
   replayCount INT DEFAULT 0,
-  
+
   FOREIGN KEY (jobId) REFERENCES jobs(id) ON DELETE CASCADE,
   FOREIGN KEY (lastExecutionId) REFERENCES job_executions(id) ON DELETE SET NULL,
   FOREIGN KEY (reviewedBy) REFERENCES users(id) ON DELETE SET NULL
@@ -33,20 +34,20 @@ CREATE TABLE dead_letter_queue (
 
 ## Columns
 
-| Column | Type | Purpose |
-|--------|------|---------|
-| `id` | UUID | DLQ entry ID |
-| `jobId` | UUID | The failed job |
-| `reason` | VARCHAR(255) | Why it failed: 'Max retries exceeded', 'Invalid payload', etc. |
-| `failureCount` | INT | Number of failed attempts |
-| `lastExecutionId` | UUID | Last job_execution attempt |
-| `metadata` | JSONB | Structured failure info (error type, stack) |
-| `createdAt` | TIMESTAMP | When job was created (original submission) |
-| `movedAt` | TIMESTAMP | When moved to DLQ |
-| `reviewedAt` | TIMESTAMP | When admin reviewed it |
-| `reviewedBy` | UUID | Which admin reviewed it |
-| `replayedAt` | TIMESTAMP | When replay was triggered |
-| `replayCount` | INT | How many times replayed |
+| Column            | Type         | Purpose                                                        |
+| ----------------- | ------------ | -------------------------------------------------------------- |
+| `id`              | UUID         | DLQ entry ID                                                   |
+| `jobId`           | UUID         | The failed job                                                 |
+| `reason`          | VARCHAR(255) | Why it failed: 'Max retries exceeded', 'Invalid payload', etc. |
+| `failureCount`    | INT          | Number of failed attempts                                      |
+| `lastExecutionId` | UUID         | Last job_execution attempt                                     |
+| `metadata`        | JSONB        | Structured failure info (error type, stack)                    |
+| `createdAt`       | TIMESTAMP    | When job was created (original submission)                     |
+| `movedAt`         | TIMESTAMP    | When moved to DLQ                                              |
+| `reviewedAt`      | TIMESTAMP    | When admin reviewed it                                         |
+| `reviewedBy`      | UUID         | Which admin reviewed it                                        |
+| `replayedAt`      | TIMESTAMP    | When replay was triggered                                      |
+| `replayCount`     | INT          | How many times replayed                                        |
 
 ## Constraints
 
@@ -58,7 +59,7 @@ ALTER TABLE dead_letter_queue ADD CONSTRAINT ck_dlq_jobId NOT NULL;
 ALTER TABLE dead_letter_queue ADD CONSTRAINT uq_dlq_jobId UNIQUE (jobId);
 
 -- Valid reasons
-ALTER TABLE dead_letter_queue ADD CONSTRAINT ck_dlq_reason 
+ALTER TABLE dead_letter_queue ADD CONSTRAINT ck_dlq_reason
   CHECK (reason IN (
     'Max retries exceeded',
     'Invalid payload',
@@ -69,15 +70,15 @@ ALTER TABLE dead_letter_queue ADD CONSTRAINT ck_dlq_reason
   ));
 
 -- failureCount must be positive
-ALTER TABLE dead_letter_queue ADD CONSTRAINT ck_dlq_failureCount 
+ALTER TABLE dead_letter_queue ADD CONSTRAINT ck_dlq_failureCount
   CHECK (failureCount > 0);
 
 -- reviewedAt can only be set once
-ALTER TABLE dead_letter_queue ADD CONSTRAINT ck_dlq_reviewed 
+ALTER TABLE dead_letter_queue ADD CONSTRAINT ck_dlq_reviewed
   CHECK (reviewedAt IS NULL OR reviewedBy IS NOT NULL);
 
 -- replayCount can't be negative
-ALTER TABLE dead_letter_queue ADD CONSTRAINT ck_dlq_replayCount 
+ALTER TABLE dead_letter_queue ADD CONSTRAINT ck_dlq_replayCount
   CHECK (replayCount >= 0);
 ```
 
@@ -85,29 +86,30 @@ ALTER TABLE dead_letter_queue ADD CONSTRAINT ck_dlq_replayCount
 
 ```sql
 -- List unreviewed DLQ items
-CREATE INDEX idx_dlq_reviewedAt 
-  ON dead_letter_queue(reviewedAt) 
+CREATE INDEX idx_dlq_reviewedAt
+  ON dead_letter_queue(reviewedAt)
   WHERE reviewedAt IS NULL;
 
 -- Find by move date (recent failures)
-CREATE INDEX idx_dlq_movedAt 
+CREATE INDEX idx_dlq_movedAt
   ON dead_letter_queue(movedAt DESC);
 
 -- Search by reason (common failure patterns)
-CREATE INDEX idx_dlq_reason 
+CREATE INDEX idx_dlq_reason
   ON dead_letter_queue(reason);
 
 -- Quick lookup by job
-CREATE UNIQUE INDEX idx_dlq_jobId 
+CREATE UNIQUE INDEX idx_dlq_jobId
   ON dead_letter_queue(jobId);
 
 -- Find recently replayed jobs
-CREATE INDEX idx_dlq_replayedAt 
-  ON dead_letter_queue(replayedAt DESC) 
+CREATE INDEX idx_dlq_replayedAt
+  ON dead_letter_queue(replayedAt DESC)
   WHERE replayedAt IS NOT NULL;
 ```
 
 **Why**:
+
 - `reviewedAt IS NULL`: Admin dashboard (show unreviewed items)
 - `movedAt DESC`: Most recent failures
 - `reason`: Identify patterns ("all InvalidPayload failures")
@@ -152,18 +154,18 @@ if (job.retryCount >= job.maxRetries) {
         errorType: execution.errorType,
         errorMessage: execution.errorMessage,
         lastAttemptAt: execution.completedAt,
-        jobType: job.type
-      }
-    }
+        jobType: job.type,
+      },
+    },
   });
-  
+
   // Update job
   await db.jobs.update({
     where: { id: job.id },
     data: {
       status: 'dead_letter',
-      movedToDLQAt: new Date()
-    }
+      movedToDLQAt: new Date(),
+    },
   });
 }
 ```
@@ -173,7 +175,7 @@ if (job.retryCount >= job.maxRetries) {
 ```typescript
 const dlqItems = await db.deadLetterQueue.findMany({
   where: {
-    reviewedAt: null  // Unreviewed
+    reviewedAt: null, // Unreviewed
   },
   orderBy: { movedAt: 'desc' },
   take: 50,
@@ -183,17 +185,17 @@ const dlqItems = await db.deadLetterQueue.findMany({
         id: true,
         type: true,
         name: true,
-        payload: true
-      }
+        payload: true,
+      },
     },
     lastExecution: {
       select: {
         errorType: true,
         errorMessage: true,
-        errorStack: true
-      }
-    }
-  }
+        errorStack: true,
+      },
+    },
+  },
 });
 
 // Result:
@@ -216,18 +218,18 @@ const dlqItem = await db.deadLetterQueue.findUnique({
   where: { jobId: jobId },
   include: {
     job: true,
-    lastExecution: true
-  }
+    lastExecution: true,
+  },
 });
 
 // Get all execution attempts for this job
 const attempts = await db.jobExecutions.findMany({
   where: { jobId: dlqItem.jobId },
-  orderBy: { attempt: 'asc' }
+  orderBy: { attempt: 'asc' },
 });
 
 // Show timeline in UI
-attempts.forEach(attempt => {
+attempts.forEach((attempt) => {
   console.log(`Attempt ${attempt.attempt}: ${attempt.status}`);
   console.log(`  Error: ${attempt.errorType} - ${attempt.errorMessage}`);
   console.log(`  Duration: ${attempt.durationMs}ms`);
@@ -241,8 +243,8 @@ await db.deadLetterQueue.update({
   where: { jobId: jobId },
   data: {
     reviewedAt: new Date(),
-    reviewedBy: adminUser.id
-  }
+    reviewedBy: adminUser.id,
+  },
 });
 ```
 
@@ -253,17 +255,17 @@ await db.deadLetterQueue.update({
 // Then replays the job
 
 const dlqItem = await db.deadLetterQueue.findUnique({
-  where: { jobId: jobId }
+  where: { jobId: jobId },
 });
 
 // Update original job
 await db.jobs.update({
   where: { id: jobId },
   data: {
-    status: 'queued',  // Back to queue
-    retryCount: 0,     // Reset retries
-    movedToDLQAt: null
-  }
+    status: 'queued', // Back to queue
+    retryCount: 0, // Reset retries
+    movedToDLQAt: null,
+  },
 });
 
 // Update DLQ entry
@@ -271,8 +273,8 @@ await db.deadLetterQueue.update({
   where: { jobId: jobId },
   data: {
     replayedAt: new Date(),
-    replayCount: { increment: 1 }
-  }
+    replayCount: { increment: 1 },
+  },
 });
 
 // Worker picks it up again
@@ -285,9 +287,9 @@ logger.info('Job replayed from DLQ', { jobId, replayCount: dlqItem.replayCount +
 const failurePatterns = await db.deadLetterQueue.groupBy({
   by: ['reason'],
   where: {
-    movedAt: { gt: new Date(Date.now() - 24*60*60*1000) }
+    movedAt: { gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
   },
-  _count: true
+  _count: true,
 });
 
 // Result:
@@ -302,13 +304,13 @@ const failurePatterns = await db.deadLetterQueue.groupBy({
 
 ```typescript
 // Keep DLQ entries for 90 days, then delete
-const thirtyDaysAgo = new Date(Date.now() - 90*24*60*60*1000);
+const thirtyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
 const deleted = await db.deadLetterQueue.deleteMany({
   where: {
     movedAt: { lt: thirtyDaysAgo },
-    replayCount: 0  // Only delete unreviewed/unreplayed
-  }
+    replayCount: 0, // Only delete unreviewed/unreplayed
+  },
 });
 
 logger.info('Cleaned DLQ', { deletedCount: deleted.count });
@@ -321,22 +323,24 @@ const allDLQ = await db.deadLetterQueue.findMany({
   include: {
     job: true,
     lastExecution: true,
-    reviewedBy: { select: { email: true } }
+    reviewedBy: { select: { email: true } },
   },
-  orderBy: { movedAt: 'desc' }
+  orderBy: { movedAt: 'desc' },
 });
 
 // Export to CSV for analysis
-const csv = csvStringify(allDLQ.map(dlq => ({
-  jobId: dlq.jobId,
-  type: dlq.job.type,
-  reason: dlq.reason,
-  failureCount: dlq.failureCount,
-  errorType: dlq.lastExecution?.errorType,
-  movedAt: dlq.movedAt,
-  reviewedBy: dlq.reviewedBy?.email || 'Not reviewed',
-  replayed: dlq.replayCount > 0
-})));
+const csv = csvStringify(
+  allDLQ.map((dlq) => ({
+    jobId: dlq.jobId,
+    type: dlq.job.type,
+    reason: dlq.reason,
+    failureCount: dlq.failureCount,
+    errorType: dlq.lastExecution?.errorType,
+    movedAt: dlq.movedAt,
+    reviewedBy: dlq.reviewedBy?.email || 'Not reviewed',
+    replayed: dlq.replayCount > 0,
+  }))
+);
 
 sendToAnalyticsService(csv);
 ```
@@ -387,6 +391,7 @@ retryCount >= maxRetries?
 ```
 
 **Why separate**:
+
 - Jobs table stays fast (active jobs only)
 - DLQ is reviewed asynchronously
 - Separate retention policy
@@ -396,13 +401,14 @@ retryCount >= maxRetries?
 
 ```typescript
 // ✅ Human-readable reason
-reason: 'Max retries exceeded'
+reason: 'Max retries exceeded';
 
 // ❌ Error code
-reason: 'ERR_MAX_RETRIES'  // Hard to remember
+reason: 'ERR_MAX_RETRIES'; // Hard to remember
 ```
 
 **Why human-readable**:
+
 - Easy to GROUP BY and analyze
 - Admin understands immediately
 - Better for reporting
@@ -411,13 +417,14 @@ reason: 'ERR_MAX_RETRIES'  // Hard to remember
 
 ```typescript
 // ✅ Count replays
-replayCount: 3  // Replayed 3 times
+replayCount: 3; // Replayed 3 times
 
 // ❌ Boolean replay flag
-isReplayed: true  // Only knows if ever replayed
+isReplayed: true; // Only knows if ever replayed
 ```
 
 **Why count**:
+
 - Track if job is "stuck in a loop"
 - Alert if replayed > N times
 - Analytics on replay patterns

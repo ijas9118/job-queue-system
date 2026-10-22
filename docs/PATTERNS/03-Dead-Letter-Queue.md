@@ -85,26 +85,26 @@ async function handleJobFailure(job: Job, error: Error) {
     status: 'failed',
     errorType: error.constructor.name,
     errorMessage: error.message,
-    errorStack: error.stack
+    errorStack: error.stack,
   });
-  
+
   // Should we retry?
   if (job.retryCount < job.maxRetries) {
     // YES: Schedule retry
     const delay = calculateBackoff(job.retryCount);
-    
+
     await db.jobs.update(job.id, {
       status: 'delayed',
       retryCount: job.retryCount + 1,
-      delayUntil: new Date(Date.now() + delay)
+      delayUntil: new Date(Date.now() + delay),
     });
-    
+
     await queue.scheduleRetry(job.id, delay);
-    
+
     logger.info('Job scheduled for retry', {
       jobId: job.id,
       attempt: job.retryCount + 1,
-      delayMs: delay
+      delayMs: delay,
     });
   } else {
     // NO: Max retries exhausted, move to DLQ
@@ -119,33 +119,33 @@ async function moveToDLQ(job: Job, error: Error) {
     lastExecutionId: execution.id,
     reason: `Max retries exceeded (${job.retryCount}/${job.maxRetries})`,
     failureCount: job.retryCount,
-    canRetry: true  // Admin might be able to fix
+    canRetry: true, // Admin might be able to fix
   });
-  
+
   // Update job status
   await db.jobs.update(job.id, {
-    status: 'dead_letter'
+    status: 'dead_letter',
   });
-  
+
   // Log event
   await db.auditLog.create({
     jobId: job.id,
     action: 'job_moved_to_dlq',
     metadata: {
       failureCount: job.retryCount,
-      errorType: error.constructor.name
-    }
+      errorType: error.constructor.name,
+    },
   });
-  
+
   // Notify dashboard
   events.emit('job:dead-letter', {
     jobId: job.id,
-    reason: 'Max retries exceeded'
+    reason: 'Max retries exceeded',
   });
-  
+
   logger.warn('Job moved to DLQ', {
     jobId: job.id,
-    failureCount: job.retryCount
+    failureCount: job.retryCount,
   });
 }
 ```
@@ -157,14 +157,14 @@ CREATE TABLE dead_letter_queue (
   id UUID PRIMARY KEY,
   jobId UUID NOT NULL REFERENCES jobs(id),
   lastExecutionId UUID REFERENCES job_executions(id),
-  
+
   reason VARCHAR(500) NOT NULL,       -- Why moved to DLQ?
   failureCount INT NOT NULL,          -- How many retries?
   canRetry BOOLEAN DEFAULT true,      -- Admin can replay?
-  
+
   movedAt TIMESTAMP DEFAULT NOW(),
   updatedAt TIMESTAMP DEFAULT NOW(),
-  
+
   CONSTRAINT fk_dlq_jobId UNIQUE (jobId)
 );
 
@@ -248,7 +248,7 @@ Move to DLQ
 
 Admin view:
   Error: "SMTP 550 User unknown"
-  
+
 Admin action:
   Check customer database
   Fix email: "valid@example.com"
@@ -270,7 +270,7 @@ Move to DLQ
 
 Admin view:
   Error: "401 Unauthorized"
-  
+
 Admin action:
   Check config: API key missing/invalid
   Update API key
@@ -296,7 +296,7 @@ Move to DLQ (after ~25 seconds)
 
 Admin view:
   Error: "Connection timeout"
-  
+
 Admin action:
   Check if service is back online
   If yes: Replay job
@@ -312,7 +312,7 @@ Dead Letter Queue
   Urgent: 5 jobs
   This Hour: 2 jobs
   Today: 12 jobs
-  
+
 Recent:
   - send-email (invalid email) → 3 retries
   - process-video (API error) → 3 retries
@@ -362,12 +362,12 @@ Retry N: Min(2^N, 3600s) ← Cap at 1 hour
 
 ## Trade-offs
 
-| Pro | Con |
-|-----|-----|
-| Prevents queue clogging | Requires admin intervention |
-| Clear visibility of failures | Manual replay isn't automatic |
-| Captures failure context | Storage overhead (keep history) |
-| Enables replay & learning | Can lose jobs if DLQ not monitored |
+| Pro                          | Con                                |
+| ---------------------------- | ---------------------------------- |
+| Prevents queue clogging      | Requires admin intervention        |
+| Clear visibility of failures | Manual replay isn't automatic      |
+| Captures failure context     | Storage overhead (keep history)    |
+| Enables replay & learning    | Can lose jobs if DLQ not monitored |
 
 ## Related Patterns
 

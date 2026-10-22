@@ -8,39 +8,43 @@
 
 Following a design review, the stack and several cross-cutting concerns were revised. Docs affected are marked below; see each linked file for the actual reasoning and code.
 
-| Area | Was | Now |
-|------|-----|-----|
-| API framework | Express.js | **Fastify** — [[COMPONENTS/01-API-Service]], [[TECH-STACK/00-Overview]] |
-| Frontend framework | React | **Angular** — [[COMPONENTS/03-Dashboard]], [[TECH-STACK/00-Overview]] |
-| Password hashing | bcrypt | **Argon2id** — [[API/01-Authentication]], [[DATABASE/01-Users-Table]] |
-| Auth token storage | Single JWT, 24h, implied localStorage | Short-lived access token (in-memory) + rotating refresh token in an **HttpOnly cookie** — [[API/01-Authentication]] |
-| API docs | None | **OpenAPI + Swagger UI**, generated from the same Zod schemas used for validation — [[COMPONENTS/01-API-Service]] |
-| E2E testing | Manual click-through scripts | Automated **Playwright** specs — [[TESTING/00-Strategy]] |
-| Observability | Metrics package only | Explicit **Logs (Pino) / Metrics (Prometheus) / Traces (OpenTelemetry, optional)** story — [[02-ARCHITECTURE-OVERVIEW]] |
-| Package structure | 8 packages scaffolded upfront | Start with `database/queue/shared/config`; extract `auth/handlers/logger/metrics` only when a second consumer needs them — [[ARCHITECTURE/02-Monorepo-Structure]] |
-| Idempotency | Request-level only (dedupe job rows) | Added handler-level idempotency (safe to re-run a job's actual side effects after a worker crash) — [[PATTERNS/01-Idempotency]] |
-| Performance/scaling numbers | Specific fabricated ms/instance-count figures | Replaced with "measure via load testing" + what to measure — [[TECH-STACK/00-Overview]], [[ARCHITECTURE/01-HLD]] |
-| Version numbers | Hard-pinned (e.g. "Angular 17+") | "Current stable/LTS" language — pin exact versions in `package.json` at implementation time, not in docs |
+| Area                        | Was                                           | Now                                                                                                                                                               |
+| --------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API framework               | Express.js                                    | **Fastify** — [[COMPONENTS/01-API-Service]], [[TECH-STACK/00-Overview]]                                                                                           |
+| Frontend framework          | React                                         | **Angular** — [[COMPONENTS/03-Dashboard]], [[TECH-STACK/00-Overview]]                                                                                             |
+| Password hashing            | bcrypt                                        | **Argon2id** — [[API/01-Authentication]], [[DATABASE/01-Users-Table]]                                                                                             |
+| Auth token storage          | Single JWT, 24h, implied localStorage         | Short-lived access token (in-memory) + rotating refresh token in an **HttpOnly cookie** — [[API/01-Authentication]]                                               |
+| API docs                    | None                                          | **OpenAPI + Swagger UI**, generated from the same Zod schemas used for validation — [[COMPONENTS/01-API-Service]]                                                 |
+| E2E testing                 | Manual click-through scripts                  | Automated **Playwright** specs — [[TESTING/00-Strategy]]                                                                                                          |
+| Observability               | Metrics package only                          | Explicit **Logs (Pino) / Metrics (Prometheus) / Traces (OpenTelemetry, optional)** story — [[02-ARCHITECTURE-OVERVIEW]]                                           |
+| Package structure           | 8 packages scaffolded upfront                 | Start with `database/queue/shared/config`; extract `auth/handlers/logger/metrics` only when a second consumer needs them — [[ARCHITECTURE/02-Monorepo-Structure]] |
+| Idempotency                 | Request-level only (dedupe job rows)          | Added handler-level idempotency (safe to re-run a job's actual side effects after a worker crash) — [[PATTERNS/01-Idempotency]]                                   |
+| Performance/scaling numbers | Specific fabricated ms/instance-count figures | Replaced with "measure via load testing" + what to measure — [[TECH-STACK/00-Overview]], [[ARCHITECTURE/01-HLD]]                                                  |
+| Version numbers             | Hard-pinned (e.g. "Angular 17+")              | "Current stable/LTS" language — pin exact versions in `package.json` at implementation time, not in docs                                                          |
 
 ## What's Been Created ✅
 
 ### Core Foundation - COMPLETE
+
 - ✅ **00-INDEX.md** - Main navigation hub with all links
 - ✅ **01-PROJECT-OVERVIEW.md** - Complete project scope, goals, scale
 - ✅ **02-ARCHITECTURE-OVERVIEW.md** - System design, data flow, communication
 
 ### Architecture (Deep Dive) - MOSTLY COMPLETE
+
 - ✅ **ARCHITECTURE/01-HLD.md** - Visual architecture, component interactions
 - ✅ **ARCHITECTURE/02-Monorepo-Structure.md** - Complete folder structure, package growth strategy
 - ⚠️ **ARCHITECTURE/03-Separation-of-Concerns.md** - Referenced from multiple docs but not yet created; Redis vs PostgreSQL is currently covered instead by [[PATTERNS/07-Redis-vs-PostgreSQL]]
 
 ### Components (Detailed) - COMPLETE
+
 - ✅ **COMPONENTS/01-API-Service.md** - Fastify API, endpoints, plugins/hooks
 - ✅ **COMPONENTS/02-Worker-Service.md** - Job processing, handlers, retries
 - ✅ **COMPONENTS/03-Dashboard.md** - Angular frontend, services, real-time updates
 - ✅ **COMPONENTS/04-Shared-Packages.md** - Shared libraries
 
 ### Database (All Tables) - COMPLETE
+
 - ✅ **DATABASE/00-Schema-Overview.md** - Complete schema, patterns, queries
 - ✅ **DATABASE/01-Users-Table.md** - Users & authentication
 - ✅ **DATABASE/02-Jobs-Table.md** - Job metadata
@@ -51,10 +55,12 @@ Following a design review, the stack and several cross-cutting concerns were rev
 - ✅ **DATABASE/07-Audit-Log-Table.md** - System events trail
 
 ### Job Lifecycle - COMPLETE
+
 - ✅ **JOB-LIFECYCLE/00-Overview.md** - Complete lifecycle flow
 - ✅ **JOB-LIFECYCLE/01-State-Machine.md** - Detailed state diagram
 
 ### Design Patterns (All 10) - COMPLETE
+
 - ✅ **PATTERNS/00-Overview.md** - All patterns overview
 - ✅ **PATTERNS/01-Idempotency.md** - Idempotency pattern
 - ✅ **PATTERNS/02-Exponential-Backoff.md** - Retry backoff
@@ -68,15 +74,19 @@ Following a design review, the stack and several cross-cutting concerns were rev
 - ✅ **PATTERNS/10-Graceful-Shutdown.md** - Shutdown pattern
 
 ### API Documentation - COMPLETE
+
 - ✅ **API/00-Overview.md** - All endpoints, auth, responses
 
 ### WebSocket Events - COMPLETE
+
 - ✅ **WEBSOCKET/00-Overview.md** - All events, subscription flow
 
 ### Tech Stack - COMPLETE
+
 - ✅ **TECH-STACK/00-Overview.md** - Complete tech stack with rationale
 
 ### Deployment (Portfolio-Focused) - COMPLETE
+
 - ✅ **DEPLOYMENT/00-Overview.md** - Overview & local setup
 - ✅ **DEPLOYMENT/01-Local-Development.md** - Docker & manual setup
 - ✅ **DEPLOYMENT/02-AWS-Portfolio-Setup.md** - AWS setup for resume
@@ -87,6 +97,7 @@ Following a design review, the stack and several cross-cutting concerns were rev
 - ✅ **DEPLOYMENT/07-CI-CD-Decision.md** - GitHub Actions vs Jenkins
 
 ### Testing - COMPLETE
+
 - ✅ **TESTING/00-Strategy.md** - Testing pyramid & examples
 
 ## Statistics
@@ -243,16 +254,19 @@ If paused when not in use: ₹2,000-3,000/month on demand
 ## Next Steps
 
 ### Option 1: Start Implementation
+
 - Use database schema as Prisma models
 - Follow component architecture
 - Write tests as per [[TESTING/00-Strategy]]
 
 ### Option 2: Deploy to AWS (Recommended for Portfolio)
+
 - Follow [[DEPLOYMENT/02-AWS-Portfolio-Setup]]
 - Set up CI/CD with [[DEPLOYMENT/05-CI-CD-GitHub-Actions]]
 - Monitor costs with [[DEPLOYMENT/04-Cost-Analysis-INR]]
 
 ### Option 3: Review & Refine
+
 - Adjust architecture based on preferences
 - Update documentation
 - Plan implementation approach
@@ -275,6 +289,7 @@ If paused when not in use: ₹2,000-3,000/month on demand
 ✅ **COMPLETE: Comprehensive Documentation + Portfolio Deployment Guide**
 
 **Critical Path - FULLY DOCUMENTED:**
+
 - ✅ System architecture with detailed diagrams
 - ✅ All 4 components (API, Worker, Dashboard, Packages)
 - ✅ Complete database schema (7 tables, all detailed)
@@ -285,6 +300,7 @@ If paused when not in use: ₹2,000-3,000/month on demand
 - ✅ CI/CD automated deployment
 
 **Ready for:**
+
 1. **Implementation** - Use as detailed blueprint
 2. **AWS Portfolio Deployment** - Follow step-by-step guides
 3. **Interviews** - Every pattern and decision documented

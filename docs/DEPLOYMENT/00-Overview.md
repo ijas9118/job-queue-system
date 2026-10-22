@@ -53,19 +53,19 @@ services:
       POSTGRES_DB: job_queue
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
 
   api:
     build: ./apps/api
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       - postgres
       - redis
@@ -85,7 +85,7 @@ services:
   dashboard:
     build: ./apps/dashboard
     ports:
-      - "3001:3000"
+      - '3001:3000'
 
 volumes:
   postgres_data:
@@ -190,27 +190,27 @@ spec:
         app: job-queue-api
     spec:
       containers:
-      - name: api
-        image: my-registry/job-queue-api:1.0.0
-        ports:
-        - containerPort: 3000
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: job-queue-secrets
-              key: database-url
-        - name: REDIS_URL
-          valueFrom:
-            secretKeyRef:
-              name: job-queue-secrets
-              key: redis-url
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 10
-          periodSeconds: 10
+        - name: api
+          image: my-registry/job-queue-api:1.0.0
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: job-queue-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: job-queue-secrets
+                  key: redis-url
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
 ```
 
 ### Worker Deployment
@@ -232,23 +232,23 @@ spec:
     spec:
       terminationGracePeriodSeconds: 40
       containers:
-      - name: worker
-        image: my-registry/job-queue-worker:1.0.0
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: job-queue-secrets
-              key: database-url
-        - name: REDIS_URL
-          valueFrom:
-            secretKeyRef:
-              name: job-queue-secrets
-              key: redis-url
-        lifecycle:
-          preStop:
-            exec:
-              command: ["/bin/sh", "-c", "sleep 5"]
+        - name: worker
+          image: my-registry/job-queue-worker:1.0.0
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: job-queue-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: job-queue-secrets
+                  key: redis-url
+          lifecycle:
+            preStop:
+              exec:
+                command: ['/bin/sh', '-c', 'sleep 5']
 ```
 
 ---

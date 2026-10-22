@@ -231,13 +231,17 @@ export class JobsService {
   private jobsSubject = new BehaviorSubject<Job[]>([]);
   jobs$ = this.jobsSubject.asObservable();
 
-  constructor(private api: ApiService, private socket: SocketService) {
+  constructor(
+    private api: ApiService,
+    private socket: SocketService
+  ) {
     this.socket.on('job:completed').subscribe(() => this.refetch());
   }
 
   refetch(filters: JobFilters = {}) {
-    this.api.get<Job[]>('/jobs', { params: filters })
-      .subscribe(jobs => this.jobsSubject.next(jobs));
+    this.api
+      .get<Job[]>('/jobs', { params: filters })
+      .subscribe((jobs) => this.jobsSubject.next(jobs));
   }
 }
 ```
@@ -263,7 +267,7 @@ export class SocketService {
   }
 
   on<T>(event: string): Observable<T> {
-    return new Observable(subscriber => {
+    return new Observable((subscriber) => {
       this.socket.on(event, (data: T) => subscriber.next(data));
       return () => this.socket.off(event);
     });
@@ -278,7 +282,7 @@ The access token is kept **in memory only** (a signal) — never in `localStorag
 ```typescript
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private accessTokenSignal = signal<string | null>(null);   // in-memory only
+  private accessTokenSignal = signal<string | null>(null); // in-memory only
   private userSignal = signal<User | null>(null);
 
   user = this.userSignal.asReadonly();
@@ -287,17 +291,21 @@ export class AuthService {
   login(email: string, password: string) {
     // Server sets the refresh token as an HttpOnly cookie on this response;
     // withCredentials so the cookie round-trips.
-    return this.http.post<LoginResponse>('/auth/login', { email, password }, { withCredentials: true })
-      .pipe(tap(res => {
-        this.accessTokenSignal.set(res.accessToken);
-        this.userSignal.set(res.user);
-      }));
+    return this.http
+      .post<LoginResponse>('/auth/login', { email, password }, { withCredentials: true })
+      .pipe(
+        tap((res) => {
+          this.accessTokenSignal.set(res.accessToken);
+          this.userSignal.set(res.user);
+        })
+      );
   }
 
   silentRefresh() {
     // Cookie is sent automatically; no body needed.
-    return this.http.post<{ accessToken: string }>('/auth/refresh', {}, { withCredentials: true })
-      .pipe(tap(res => this.accessTokenSignal.set(res.accessToken)));
+    return this.http
+      .post<{ accessToken: string }>('/auth/refresh', {}, { withCredentials: true })
+      .pipe(tap((res) => this.accessTokenSignal.set(res.accessToken)));
   }
 
   accessToken() {
@@ -327,23 +335,23 @@ Dashboard subscribes to WebSocket events via `SocketService` and updates signals
 // Subscribe to job updates
 this.socket.emit('subscribe', {
   channel: 'jobs',
-  filters: { userId: this.authService.user()?.id }
+  filters: { userId: this.authService.user()?.id },
 });
 
 // Listen for events
-this.socket.on<Job>('job:created').subscribe(job => {
+this.socket.on<Job>('job:created').subscribe((job) => {
   this.jobsSubject.next([job, ...this.jobsSubject.value]);
 });
 
-this.socket.on<{ jobId: string; progress: number }>('job:progress').subscribe(data => {
-  const updated = this.jobsSubject.value.map(j =>
+this.socket.on<{ jobId: string; progress: number }>('job:progress').subscribe((data) => {
+  const updated = this.jobsSubject.value.map((j) =>
     j.id === data.jobId ? { ...j, progress: data.progress } : j
   );
   this.jobsSubject.next(updated);
 });
 
-this.socket.on<Job>('job:completed').subscribe(job => {
-  const updated = this.jobsSubject.value.map(j => (j.id === job.id ? job : j));
+this.socket.on<Job>('job:completed').subscribe((job) => {
+  const updated = this.jobsSubject.value.map((j) => (j.id === job.id ? job : j));
   this.jobsSubject.next(updated);
 });
 ```
@@ -389,9 +397,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 @Component({
   selector: 'app-job-status-badge',
   standalone: true,
-  template: `
-    <span [class]="badgeClasses">{{ status.toUpperCase() }}</span>
-  `
+  template: ` <span [class]="badgeClasses">{{ status.toUpperCase() }}</span> `,
 })
 export class JobStatusBadgeComponent {
   @Input() status!: JobStatus;
@@ -401,7 +407,7 @@ export class JobStatusBadgeComponent {
     active: 'bg-yellow-100 text-yellow-800',
     completed: 'bg-green-100 text-green-800',
     failed: 'bg-red-100 text-red-800',
-    dead_letter: 'bg-red-200 text-red-900'
+    dead_letter: 'bg-red-200 text-red-900',
   };
 
   get badgeClasses() {
@@ -441,7 +447,7 @@ import { z } from 'zod';
 const jobSchema = z.object({
   type: z.string().min(1),
   payload: z.record(z.unknown()),
-  priority: z.number().optional()
+  priority: z.number().optional(),
 });
 
 @Component({ selector: 'app-job-form', standalone: true })
@@ -449,7 +455,7 @@ export class JobFormComponent {
   form = this.fb.group({
     type: ['', Validators.required],
     payload: [{}],
-    priority: [null as number | null]
+    priority: [null as number | null],
   });
 
   constructor(private fb: FormBuilder) {}
@@ -468,9 +474,7 @@ export class JobFormComponent {
 ```html
 <form [formGroup]="form" (ngSubmit)="onSubmit()">
   <input formControlName="type" />
-  <span *ngIf="form.get('type')?.invalid && form.get('type')?.touched">
-    Type is required
-  </span>
+  <span *ngIf="form.get('type')?.invalid && form.get('type')?.touched"> Type is required </span>
 </form>
 ```
 
@@ -513,16 +517,28 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 ```typescript
 // Lazy-loaded routes (app.routes.ts)
 export const routes: Routes = [
-  { path: '', loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent) },
-  { path: 'jobs/:id', loadComponent: () => import('./pages/job-detail/job-detail.component').then(m => m.JobDetailComponent) },
-  { path: 'workers', loadComponent: () => import('./pages/workers/workers.component').then(m => m.WorkersComponent) }
+  {
+    path: '',
+    loadComponent: () =>
+      import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+  },
+  {
+    path: 'jobs/:id',
+    loadComponent: () =>
+      import('./pages/job-detail/job-detail.component').then((m) => m.JobDetailComponent),
+  },
+  {
+    path: 'workers',
+    loadComponent: () =>
+      import('./pages/workers/workers.component').then((m) => m.WorkersComponent),
+  },
 ];
 
 // OnPush change detection (equivalent to React.memo)
 @Component({
   selector: 'app-job-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
+  standalone: true,
 })
 export class JobCardComponent {
   @Input() job!: Job;
@@ -547,7 +563,7 @@ describe('JobFormComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [JobFormComponent, ReactiveFormsModule]
+      imports: [JobFormComponent, ReactiveFormsModule],
     }).compileComponents();
     fixture = TestBed.createComponent(JobFormComponent);
   });

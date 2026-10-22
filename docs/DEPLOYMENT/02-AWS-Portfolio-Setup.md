@@ -3,6 +3,7 @@
 ## Strategy: Minimal Cost, Maximum Impact
 
 For portfolio/resume showcase, we want:
+
 - ✅ **Live production system** (impressive for interviews)
 - ✅ **Real AWS services** (shows cloud understanding)
 - ✅ **Minimal cost** (~₹500-800/month)
@@ -255,28 +256,28 @@ aws s3 sync dist/apps/dashboard s3://job-queue-portfolio-bucket
 
 ### Free Tier (First 12 Months)
 
-| Service | Free Tier | Your Cost |
-|---------|-----------|-----------|
-| **EC2** | 750 hours/month t2.micro | ₹0 (if using t2.micro) |
-| **RDS** | 750 hours/month db.t2.micro | ₹0 (if using t2.micro) |
-| **ElastiCache** | None | ₹800 |
-| **Data Transfer** | 100GB/month | ₹0 |
-| **CloudFront** | 50GB/month | ₹0 |
+| Service           | Free Tier                   | Your Cost              |
+| ----------------- | --------------------------- | ---------------------- |
+| **EC2**           | 750 hours/month t2.micro    | ₹0 (if using t2.micro) |
+| **RDS**           | 750 hours/month db.t2.micro | ₹0 (if using t2.micro) |
+| **ElastiCache**   | None                        | ₹800                   |
+| **Data Transfer** | 100GB/month                 | ₹0                     |
+| **CloudFront**    | 50GB/month                  | ₹0                     |
 
 **First year: ~₹800/month** (just ElastiCache)
 
 ### After Free Tier (Year 2+)
 
-| Service | Instance Type | Cost/Month (INR) |
-|---------|---------------|------------------|
-| **EC2** | t3.micro | ₹550 |
-| **RDS PostgreSQL** | db.t3.micro | ₹1,100 |
-| **ElastiCache Redis** | cache.t3.micro | ₹800 |
-| **Data Transfer (minimal)** | Internal AWS | ₹0 |
-| **CloudFront (if used)** | 10GB/month | ₹200 |
-| **S3 (for backups)** | ~10GB storage | ₹250 |
-| **Backup storage** | Manual snapshots | ₹100 |
-| **Misc (logs, monitoring)** | CloudWatch, etc. | ₹100 |
+| Service                     | Instance Type    | Cost/Month (INR) |
+| --------------------------- | ---------------- | ---------------- |
+| **EC2**                     | t3.micro         | ₹550             |
+| **RDS PostgreSQL**          | db.t3.micro      | ₹1,100           |
+| **ElastiCache Redis**       | cache.t3.micro   | ₹800             |
+| **Data Transfer (minimal)** | Internal AWS     | ₹0               |
+| **CloudFront (if used)**    | 10GB/month       | ₹200             |
+| **S3 (for backups)**        | ~10GB storage    | ₹250             |
+| **Backup storage**          | Manual snapshots | ₹100             |
+| **Misc (logs, monitoring)** | CloudWatch, etc. | ₹100             |
 
 **Total after year 1: ~₹3,100/month**
 

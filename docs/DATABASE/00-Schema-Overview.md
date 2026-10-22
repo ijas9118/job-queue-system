@@ -10,15 +10,15 @@
 
 ## Quick Reference
 
-| Table | Purpose | Rows | Immutable? |
-|-------|---------|------|-----------|
-| `users` | User accounts & roles | ~1000s | No |
-| `jobs` | Job metadata & current state | ~1M | No |
-| `job_executions` | Execution history (every attempt) | ~10M | ✅ Yes |
-| `job_logs` | Structured logs per execution | ~100M | ✅ Yes |
-| `workers` | Worker registry & health | ~10-100 | No (ephemeral) |
-| `dead_letter_queue` | Failed jobs archive | ~1000s | No |
-| `audit_log` | System events for compliance | ~10M | ✅ Yes |
+| Table               | Purpose                           | Rows    | Immutable?     |
+| ------------------- | --------------------------------- | ------- | -------------- |
+| `users`             | User accounts & roles             | ~1000s  | No             |
+| `jobs`              | Job metadata & current state      | ~1M     | No             |
+| `job_executions`    | Execution history (every attempt) | ~10M    | ✅ Yes         |
+| `job_logs`          | Structured logs per execution     | ~100M   | ✅ Yes         |
+| `workers`           | Worker registry & health          | ~10-100 | No (ephemeral) |
+| `dead_letter_queue` | Failed jobs archive               | ~1000s  | No             |
+| `audit_log`         | System events for compliance      | ~10M    | ✅ Yes         |
 
 ## Core Relationships
 
@@ -73,7 +73,7 @@ Success:
     INSERT INTO job_executions (status='completed', result=...)
     UPDATE jobs (status='completed', completedAt=NOW())
     INSERT INTO audit_log (action='job_completed')
-    
+
 Failure:
     INSERT INTO job_executions (status='failed', errorType=..., errorStack=...)
     If retryCount < maxRetries:
@@ -160,7 +160,7 @@ SELECT * FROM workers WHERE lastHeartbeat < NOW() - INTERVAL '5 minutes';
 ### Find User's Jobs
 
 ```sql
-SELECT * FROM jobs 
+SELECT * FROM jobs
 WHERE userId = ? AND cancelledAt IS NULL
 ORDER BY createdAt DESC
 LIMIT 50;
@@ -179,7 +179,7 @@ SELECT * FROM job_logs WHERE jobExecutionId IN (...) ORDER BY createdAt;
 ### Dashboard: Queue Stats
 
 ```sql
-SELECT 
+SELECT
   COUNT(*) FILTER (WHERE status = 'queued') as waiting,
   COUNT(*) FILTER (WHERE status = 'active') as active,
   COUNT(*) FILTER (WHERE status = 'delayed') as delayed,
@@ -192,7 +192,7 @@ WHERE queueName = ? AND cancelledAt IS NULL;
 ### Analytics: Job Performance
 
 ```sql
-SELECT 
+SELECT
   type,
   COUNT(*) as total,
   COUNT(*) FILTER (WHERE status = 'completed') as succeeded,
@@ -206,7 +206,7 @@ ORDER BY total DESC;
 ### DLQ: Failed Jobs Needing Review
 
 ```sql
-SELECT 
+SELECT
   j.id, j.type, j.name,
   d.failureCount, d.reason, d.movedAt,
   je.errorMessage
@@ -291,6 +291,7 @@ FOREIGN KEY (jobId) REFERENCES jobs(id) ON DELETE CASCADE;
 ## Storage Estimates
 
 Assuming:
+
 - 1000 jobs/day
 - 365 days (1 year)
 - 1.5 executions per job (some succeed on first try)
@@ -311,6 +312,7 @@ Total (5 years):                                ≈ 5.5 GB
 ```
 
 **Mitigation**:
+
 - Archive old records annually
 - Partition by date for large tables
 - Delete DLQ records after X days
@@ -326,6 +328,7 @@ pnpm --filter database run migrate dev --name add_jobs_table
 Migrations stored in `packages/database/prisma/migrations/`
 
 Each migration creates schema version history:
+
 - Can rollback
 - Can replay on new environments
 - Tracks schema evolution

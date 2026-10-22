@@ -2,13 +2,13 @@
 
 ## TL;DR: Is it Worth It?
 
-| Scenario | Monthly Cost (INR) | Use Case | Worth It? |
-|----------|-------------------|----------|----------|
-| **Local only** | ₹0 | Learning, development | ✅ Yes (free!) |
-| **Portfolio (with free tier)** | ₹500-1000 | Show on resume, interviews | ✅ Yes |
-| **Portfolio (after 1 year)** | ₹2500-3500 | Continuous showcase | ⚠️ Maybe (depends on opportunity) |
-| **Production (low load)** | ₹8000-12000 | Small business | ❌ No (too expensive) |
-| **Production (heavy load)** | ₹50000+ | Scaling business | ✅ Yes (justified ROI) |
+| Scenario                       | Monthly Cost (INR) | Use Case                   | Worth It?                         |
+| ------------------------------ | ------------------ | -------------------------- | --------------------------------- |
+| **Local only**                 | ₹0                 | Learning, development      | ✅ Yes (free!)                    |
+| **Portfolio (with free tier)** | ₹500-1000          | Show on resume, interviews | ✅ Yes                            |
+| **Portfolio (after 1 year)**   | ₹2500-3500         | Continuous showcase        | ⚠️ Maybe (depends on opportunity) |
+| **Production (low load)**      | ₹8000-12000        | Small business             | ❌ No (too expensive)             |
+| **Production (heavy load)**    | ₹50000+            | Scaling business           | ✅ Yes (justified ROI)            |
 
 **Bottom line for you**: Deploy on AWS with free tier for 12 months, then decide if worth continuing.
 
@@ -259,7 +259,7 @@ Deployment:
 Cost Profile:
   Year 1: ₹12,000 total (with free tier credits: potentially free)
   Year 2: Can stop when not in use = ₹2000-3000/month on demand
-  
+
 Decision: ✅ ABSOLUTELY WORTH IT
   - Shows cloud experience to recruiters
   - Costs basically nothing year 1
@@ -276,11 +276,11 @@ Deployment:
   - Local development: ₹0
   - Deploy to AWS only for testing
   - Use free tier only
-  
+
 Cost Profile:
   Year 1: ₹0-500/month
   Year 2: Stop using, ₹0
-  
+
 Decision: ✅ DEFINITELY WORTH IT
   - Free/cheap learning experience
   - Can pause anytime
@@ -304,7 +304,7 @@ Deployment:
 Cost Profile:
   Year 1: ₹7650/month (even with free tier, not applicable)
   Year 2: ₹7650+/month (needs revenue to justify)
-  
+
 Decision: ⚠️ ONLY IF GENERATING REVENUE
   - High operational cost
   - Need 10x revenue to break even

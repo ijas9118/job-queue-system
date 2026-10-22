@@ -1,5 +1,32 @@
+# Dependencies
 node_modules/
+.pnpm-store/
+pnpm-lock.yaml
+
+# Build outputs
 dist/
+build/
+*.tsbuildinfo
+
+# Environment
 .env
+.env.local
+.env.*.local
+
+# Logs
 *.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
+
+# Runtime
+.turbo/
+.next/

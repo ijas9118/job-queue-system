@@ -11,6 +11,7 @@ Shared packages are reusable libraries used by multiple apps (API, worker, dashb
 **Purpose**: Abstracts BullMQ operations with app-specific logic
 
 **Exports**:
+
 ```typescript
 // Class
 class JobQueue {
@@ -38,11 +39,13 @@ export async function moveJobsToDLQ(jobs: Job[]): Promise<void>;
 **Purpose**: Database access layer
 
 **Files**:
+
 - `prisma/schema.prisma` - Database schema definition
 - `prisma/migrations/*` - Migration history
 - `src/index.ts` - Exported Prisma client
 
 **Exports**:
+
 ```typescript
 export { PrismaClient } from '@prisma/client';
 export type { Job, JobExecution, Worker } from '@prisma/client';
@@ -63,6 +66,7 @@ const db = new PrismaClient();
 **Purpose**: JWT and RBAC logic
 
 **Key Functions**:
+
 ```typescript
 // JWT
 export function generateToken(userId, email, role): string;
@@ -88,6 +92,7 @@ export function rbacMiddleware(permission: string): Middleware;
 **Purpose**: Registry of all job types the system can execute
 
 **Structure**:
+
 ```typescript
 interface JobHandler<T = any, R = any> {
   type: string;
@@ -106,6 +111,7 @@ class HandlerRegistry {
 ```
 
 **Built-in Handlers**:
+
 ```typescript
 export { sendEmailHandler } from './handlers/sendEmail';
 export { processVideoHandler } from './handlers/processVideo';
@@ -113,12 +119,13 @@ export { generateReportHandler } from './handlers/generateReport';
 ```
 
 **Creating Custom Handler**:
+
 ```typescript
 import { z } from 'zod';
 
 const myJobPayloadSchema = z.object({
   userId: z.string(),
-  data: z.unknown()
+  data: z.unknown(),
 });
 
 export const myJobHandler: JobHandler = {
@@ -126,11 +133,11 @@ export const myJobHandler: JobHandler = {
   schema: myJobPayloadSchema,
   timeout: 30000,
   maxRetries: 3,
-  
+
   async execute(payload) {
     // Implementation
     return { success: true };
-  }
+  },
 };
 ```
 
@@ -143,6 +150,7 @@ export const myJobHandler: JobHandler = {
 **Purpose**: Consistent logging with Pino
 
 **Usage**:
+
 ```typescript
 import { createLogger } from '@job-queue/logger';
 
@@ -157,6 +165,7 @@ logger.debug('Internal state', { state: 'active' });
 **Levels**: DEBUG, INFO, WARN, ERROR
 
 **Features**:
+
 - Structured JSON logs
 - Child loggers with context
 - Log levels configurable
@@ -171,6 +180,7 @@ logger.debug('Internal state', { state: 'active' });
 **Purpose**: Track system metrics using `prom-client`, with a fixed, deliberately small set of named metrics rather than ad-hoc counters — see [[02-ARCHITECTURE-OVERVIEW]]#observability for how this fits alongside logs (Pino) and optional tracing (OpenTelemetry).
 
 **Metrics**:
+
 ```typescript
 import { metrics } from '@job-queue/metrics';
 
@@ -191,15 +201,15 @@ metrics.httpRequestDuration.observe({ route, method, status }, durationSeconds);
 GET /metrics → Prometheus-compatible output
 ```
 
-| Metric | Type | Labels |
-|--------|------|--------|
-| `jobs_total` | Counter | `type` |
-| `jobs_completed_total` | Counter | `type` |
-| `jobs_failed_total` | Counter | `type` |
-| `job_processing_duration_seconds` | Histogram | `type` |
-| `queue_depth` | Gauge | `queue` |
-| `worker_active_jobs` | Gauge | — |
-| `http_request_duration_seconds` | Histogram | `route`, `method`, `status` |
+| Metric                            | Type      | Labels                      |
+| --------------------------------- | --------- | --------------------------- |
+| `jobs_total`                      | Counter   | `type`                      |
+| `jobs_completed_total`            | Counter   | `type`                      |
+| `jobs_failed_total`               | Counter   | `type`                      |
+| `job_processing_duration_seconds` | Histogram | `type`                      |
+| `queue_depth`                     | Gauge     | `queue`                     |
+| `worker_active_jobs`              | Gauge     | —                           |
+| `http_request_duration_seconds`   | Histogram | `route`, `method`, `status` |
 
 **Used by**: API (`/metrics` endpoint, HTTP duration), Worker (job counters/durations)
 
@@ -210,6 +220,7 @@ GET /metrics → Prometheus-compatible output
 **Purpose**: Environment configuration with validation
 
 **Usage**:
+
 ```typescript
 import { getConfig } from '@job-queue/config';
 
@@ -225,6 +236,7 @@ const config = getConfig();
 **Validation**: Uses Zod schema
 
 **Sources** (in order):
+
 1. Environment variables (`.env` file)
 2. Environment variables (process.env)
 3. Defaults from `config/defaults.ts`
@@ -238,6 +250,7 @@ const config = getConfig();
 **Purpose**: Shared types and utility functions
 
 **Types**:
+
 ```typescript
 export interface Job {
   id: string;
@@ -266,11 +279,12 @@ export enum JobStatus {
   DELAYED = 'delayed',
   DEAD_LETTER = 'dead_letter',
   CANCELLED = 'cancelled',
-  PAUSED = 'paused'
+  PAUSED = 'paused',
 }
 ```
 
 **Utilities**:
+
 ```typescript
 export function generateJobId(): string;
 export function isRetryableError(error: Error): boolean;

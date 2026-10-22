@@ -12,43 +12,36 @@ Returned by all job endpoints. Learn this once — every endpoint returns this s
 ```typescript
 interface Job {
   // ── Set by the client on submission ──────────────────────────────────────
-  type: string;                // "send-email" | "process-payment" | etc.
-  name: string | null;         // Human-readable label
-  queueName: string;           // "email" | "payment" | "background"
-  priority: number;            // -100 to 100, default 0
-  payload: Record<string, unknown>;   // Input passed to the handler
-  maxRetries: number;          // Default 3
+  type: string; // "send-email" | "process-payment" | etc.
+  name: string | null; // Human-readable label
+  queueName: string; // "email" | "payment" | "background"
+  priority: number; // -100 to 100, default 0
+  payload: Record<string, unknown>; // Input passed to the handler
+  maxRetries: number; // Default 3
   idempotencyKey: string | null;
-  delayUntil: string | null;   // ISO 8601 — schedule job in the future
-  tags: string[];              // e.g. ["stripe", "invoice"]
+  delayUntil: string | null; // ISO 8601 — schedule job in the future
+  tags: string[]; // e.g. ["stripe", "invoice"]
   estimatedDurationMs: number | null;
 
   // ── Read-only: managed by the server / workers ───────────────────────────
   // Do not send these on submission. Any values provided will be ignored.
-  id: string;                  // UUID, assigned at creation
-  userId: string;              // UUID, set from the authenticated user
-  status: JobStatus;           // Driven by the state machine
-  retryCount: number;          // Incremented by the worker on each failure
-  progress: number;            // 0–100, updated by the worker mid-execution
-  result: Record<string, unknown> | null;  // Populated on success
-  createdAt: string;           // ISO 8601
-  startedAt: string | null;    // Set when a worker picks up the job
-  completedAt: string | null;  // Set on successful completion
-  failedAt: string | null;     // Set on each failure
+  id: string; // UUID, assigned at creation
+  userId: string; // UUID, set from the authenticated user
+  status: JobStatus; // Driven by the state machine
+  retryCount: number; // Incremented by the worker on each failure
+  progress: number; // 0–100, updated by the worker mid-execution
+  result: Record<string, unknown> | null; // Populated on success
+  createdAt: string; // ISO 8601
+  startedAt: string | null; // Set when a worker picks up the job
+  completedAt: string | null; // Set on successful completion
+  failedAt: string | null; // Set on each failure
   movedToDLQAt: string | null; // Set when max retries are exhausted
-  cancelledAt: string | null;  // Set when status transitions to 'cancelled'
-  updatedAt: string;           // Updated on every state transition
+  cancelledAt: string | null; // Set when status transitions to 'cancelled'
+  updatedAt: string; // Updated on every state transition
 }
 
 type JobStatus =
-  | 'queued'
-  | 'active'
-  | 'completed'
-  | 'failed'
-  | 'delayed'
-  | 'dead_letter'
-  | 'paused'
-  | 'cancelled';
+  'queued' | 'active' | 'completed' | 'failed' | 'delayed' | 'dead_letter' | 'paused' | 'cancelled';
 ```
 
 ### Job Lifecycle
@@ -121,20 +114,21 @@ Creates a new job and pushes it to the Redis queue.
 }
 ```
 
-| Field | Required | Type | Notes |
-|-------|----------|------|-------|
-| `type` | Yes | string | Identifies which handler processes this job |
-| `queueName` | Yes | string | Which queue to push to |
-| `payload` | Yes | object | Passed to the handler as-is |
-| `name` | No | string | Human-readable label for the dashboard |
-| `priority` | No | int | Default `0`. Higher = processed sooner |
-| `maxRetries` | No | int | Default `3`. Max `10`. |
-| `idempotencyKey` | No | string | Unique per user — duplicate submission returns existing job |
-| `delayUntil` | No | ISO 8601 | Schedule job in the future |
-| `tags` | No | string[] | For filtering. Max 10 tags, 50 chars each |
-| `estimatedDurationMs` | No | int | Used for analytics only |
+| Field                 | Required | Type     | Notes                                                       |
+| --------------------- | -------- | -------- | ----------------------------------------------------------- |
+| `type`                | Yes      | string   | Identifies which handler processes this job                 |
+| `queueName`           | Yes      | string   | Which queue to push to                                      |
+| `payload`             | Yes      | object   | Passed to the handler as-is                                 |
+| `name`                | No       | string   | Human-readable label for the dashboard                      |
+| `priority`            | No       | int      | Default `0`. Higher = processed sooner                      |
+| `maxRetries`          | No       | int      | Default `3`. Max `10`.                                      |
+| `idempotencyKey`      | No       | string   | Unique per user — duplicate submission returns existing job |
+| `delayUntil`          | No       | ISO 8601 | Schedule job in the future                                  |
+| `tags`                | No       | string[] | For filtering. Max 10 tags, 50 chars each                   |
+| `estimatedDurationMs` | No       | int      | Used for analytics only                                     |
 
 **Validation rules:**
+
 - `type` max 100 chars
 - `queueName` max 100 chars, must match a known queue (configurable allowlist)
 - `payload` max 1MB serialized
@@ -225,19 +219,19 @@ Returns the authenticated user's jobs. Admins can see all jobs via `GET /admin/j
 
 **Query Parameters:**
 
-| Param | Type | Default | Description |
-|-------|------|---------|-------------|
-| `status` | string (comma-sep) | all | Filter by status. e.g. `?status=queued,active` |
-| `type` | string | — | Filter by job type. e.g. `?type=send-email` |
-| `queueName` | string | — | Filter by queue |
-| `tags` | string (comma-sep) | — | Jobs that have ALL listed tags |
-| `search` | string | — | Case-insensitive substring match on `name` (`ILIKE '%query%'`). Not anchored — matches anywhere in the string. |
-| `limit` | int | 50 | Max 200 |
-| `offset` | int | 0 | For pagination |
-| `sortBy` | string | `createdAt` | `createdAt` \| `updatedAt` \| `priority` — any other value returns `400 VALIDATION_ERROR` |
-| `sortOrder` | string | `DESC` | `ASC` \| `DESC` — any other value returns `400 VALIDATION_ERROR` |
-| `from` | ISO 8601 | — | Filter jobs created after this time |
-| `to` | ISO 8601 | — | Filter jobs created before this time |
+| Param       | Type               | Default     | Description                                                                                                    |
+| ----------- | ------------------ | ----------- | -------------------------------------------------------------------------------------------------------------- |
+| `status`    | string (comma-sep) | all         | Filter by status. e.g. `?status=queued,active`                                                                 |
+| `type`      | string             | —           | Filter by job type. e.g. `?type=send-email`                                                                    |
+| `queueName` | string             | —           | Filter by queue                                                                                                |
+| `tags`      | string (comma-sep) | —           | Jobs that have ALL listed tags                                                                                 |
+| `search`    | string             | —           | Case-insensitive substring match on `name` (`ILIKE '%query%'`). Not anchored — matches anywhere in the string. |
+| `limit`     | int                | 50          | Max 200                                                                                                        |
+| `offset`    | int                | 0           | For pagination                                                                                                 |
+| `sortBy`    | string             | `createdAt` | `createdAt` \| `updatedAt` \| `priority` — any other value returns `400 VALIDATION_ERROR`                      |
+| `sortOrder` | string             | `DESC`      | `ASC` \| `DESC` — any other value returns `400 VALIDATION_ERROR`                                               |
+| `from`      | ISO 8601           | —           | Filter jobs created after this time                                                                            |
+| `to`        | ISO 8601           | —           | Filter jobs created before this time                                                                           |
 
 **Example:**
 
@@ -265,6 +259,7 @@ GET /api/v1/jobs?status=failed,dead_letter&tags=stripe&limit=20&sortBy=createdAt
 > `total` reflects the count after filters are applied — use it to drive pagination UI.
 
 **Notes:**
+
 - Cancelled jobs are excluded by default. Pass `?status=cancelled` to include them explicitly.
 - `tags` filter is AND — `?tags=stripe,invoice` returns jobs that have **both** tags.
 - `search` uses `ILIKE '%query%'` — case-insensitive, matches anywhere in `name`. An empty string is treated as no filter (not an error).
@@ -340,11 +335,11 @@ Returns a single job with its full execution history and recent logs.
 
 **Query params for detail view:**
 
-| Param | Default | Description |
-|-------|---------|-------------|
-| `logsLimit` | 100 | How many log lines to include |
-| `logsOffset` | 0 | Pagination for logs |
-| `executionId` | latest | Pin logs to a specific execution attempt |
+| Param         | Default | Description                              |
+| ------------- | ------- | ---------------------------------------- |
+| `logsLimit`   | 100     | How many log lines to include            |
+| `logsOffset`  | 0       | Pagination for logs                      |
+| `executionId` | latest  | Pin logs to a specific execution attempt |
 
 **Error responses:**
 
@@ -383,11 +378,11 @@ Returns only the fields a polling client needs to track progress. Use this inste
 
 **When to use each endpoint:**
 
-| Situation | Endpoint |
-|-----------|----------|
-| Dashboard job detail page | `GET /jobs/:jobId` |
-| Polling for completion (e.g. every 2s) | `GET /jobs/:jobId/status` |
-| Real-time updates | WebSocket — see [[WEBSOCKET/00-Overview]] |
+| Situation                              | Endpoint                                  |
+| -------------------------------------- | ----------------------------------------- |
+| Dashboard job detail page              | `GET /jobs/:jobId`                        |
+| Polling for completion (e.g. every 2s) | `GET /jobs/:jobId/status`                 |
+| Real-time updates                      | WebSocket — see [[WEBSOCKET/00-Overview]] |
 
 > **Prefer WebSocket over polling.** The status endpoint exists for clients that can't use WebSocket (server-to-server, CLI tools). For a browser dashboard, subscribe to `job:${jobId}` events instead — the server pushes updates rather than the client pulling them.
 
@@ -471,12 +466,12 @@ Stops a job and marks it as cancelled. Behaviour differs by current status.
 
 **Cancellation behaviour by status:**
 
-| Current Status | What happens |
-|---|---|
-| `queued` | Removed from Redis queue. `status = cancelled`, `cancelledAt = NOW()` |
-| `delayed` | Removed from BullMQ delayed set. `status = cancelled`, `cancelledAt = NOW()` |
-| `paused` | Marked cancelled immediately |
-| `active` | Worker detects cancellation flag on next checkpoint. Job stops at the next safe point — not instantly. |
+| Current Status | What happens                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------ |
+| `queued`       | Removed from Redis queue. `status = cancelled`, `cancelledAt = NOW()`                                  |
+| `delayed`      | Removed from BullMQ delayed set. `status = cancelled`, `cancelledAt = NOW()`                           |
+| `paused`       | Marked cancelled immediately                                                                           |
+| `active`       | Worker detects cancellation flag on next checkpoint. Job stops at the next safe point — not instantly. |
 
 > For `active` jobs: the worker polls a `job:<id>:cancelled` Redis key. The API sets this key; the worker checks it between processing steps and exits cleanly. There is no guarantee of immediate termination.
 
@@ -519,18 +514,18 @@ Stops a job and marks it as cancelled. Behaviour differs by current status.
 
 All job endpoint errors use the standard error envelope from [[API/00-Overview]].
 
-| Code | Status | When |
-|------|--------|------|
-| `VALIDATION_ERROR` | 400 | Request body fails Zod schema |
-| `UNKNOWN_QUEUE` | 400 | `queueName` not in configured allowlist |
-| `PAYLOAD_TOO_LARGE` | 413 | `payload` exceeds 1MB |
-| `UNAUTHORIZED` | 401 | Missing or invalid access token |
-| `TOKEN_EXPIRED` | 401 | Access token expired |
-| `FORBIDDEN` | 403 | Authenticated but no permission (wrong owner) |
-| `JOB_NOT_FOUND` | 404 | Job doesn't exist or belongs to another user |
-| `JOB_NOT_RETRYABLE` | 409 | Retry attempted on non-failed job |
-| `JOB_NOT_CANCELLABLE` | 409 | Cancel attempted on terminal job |
-| `RATE_LIMITED` | 429 | Global rate limit hit |
+| Code                  | Status | When                                          |
+| --------------------- | ------ | --------------------------------------------- |
+| `VALIDATION_ERROR`    | 400    | Request body fails Zod schema                 |
+| `UNKNOWN_QUEUE`       | 400    | `queueName` not in configured allowlist       |
+| `PAYLOAD_TOO_LARGE`   | 413    | `payload` exceeds 1MB                         |
+| `UNAUTHORIZED`        | 401    | Missing or invalid access token               |
+| `TOKEN_EXPIRED`       | 401    | Access token expired                          |
+| `FORBIDDEN`           | 403    | Authenticated but no permission (wrong owner) |
+| `JOB_NOT_FOUND`       | 404    | Job doesn't exist or belongs to another user  |
+| `JOB_NOT_RETRYABLE`   | 409    | Retry attempted on non-failed job             |
+| `JOB_NOT_CANCELLABLE` | 409    | Cancel attempted on terminal job              |
+| `RATE_LIMITED`        | 429    | Global rate limit hit                         |
 
 ---
 

@@ -8,7 +8,7 @@ import { io } from 'socket.io-client';
 // accessToken comes from AuthService's in-memory signal — never localStorage.
 // See [[COMPONENTS/03-Dashboard]] and [[API/01-Authentication]].
 const socket = io('http://localhost:3000', {
-  auth: { token: authService.accessToken() }
+  auth: { token: authService.accessToken() },
 });
 
 socket.on('connect', () => {
@@ -26,17 +26,17 @@ socket.on('disconnect', () => {
 // Subscribe to job updates
 socket.emit('subscribe', {
   channel: 'jobs',
-  filters: { userId: currentUser.id }
+  filters: { userId: currentUser.id },
 });
 
 // Subscribe to worker updates
 socket.emit('subscribe', {
-  channel: 'workers'
+  channel: 'workers',
 });
 
 // Subscribe to queue stats
 socket.emit('subscribe', {
-  channel: 'queue-stats'
+  channel: 'queue-stats',
 });
 ```
 
@@ -266,30 +266,37 @@ export class JobDashboardComponent implements OnInit, OnDestroy {
   jobs = signal<Job[]>([]);
   private subs = new Subscription();
 
-  constructor(private socket: SocketService, private auth: AuthService) {}
+  constructor(
+    private socket: SocketService,
+    private auth: AuthService
+  ) {}
 
   ngOnInit() {
     this.socket.connect(this.auth.accessToken()!);
     this.socket.emit('subscribe', { channel: 'jobs' });
 
     this.subs.add(
-      this.socket.on<Job>('job:created').subscribe(job =>
-        this.jobs.update(prev => [job, ...prev])
-      )
+      this.socket
+        .on<Job>('job:created')
+        .subscribe((job) => this.jobs.update((prev) => [job, ...prev]))
     );
 
     this.subs.add(
-      this.socket.on<{ jobId: string; progress: number }>('job:progress').subscribe(data =>
-        this.jobs.update(prev =>
-          prev.map(j => (j.id === data.jobId ? { ...j, progress: data.progress } : j))
+      this.socket
+        .on<{ jobId: string; progress: number }>('job:progress')
+        .subscribe((data) =>
+          this.jobs.update((prev) =>
+            prev.map((j) => (j.id === data.jobId ? { ...j, progress: data.progress } : j))
+          )
         )
-      )
     );
 
     this.subs.add(
-      this.socket.on<Job>('job:completed').subscribe(job =>
-        this.jobs.update(prev => prev.map(j => (j.id === job.id ? job : j)))
-      )
+      this.socket
+        .on<Job>('job:completed')
+        .subscribe((job) =>
+          this.jobs.update((prev) => prev.map((j) => (j.id === job.id ? job : j)))
+        )
     );
   }
 

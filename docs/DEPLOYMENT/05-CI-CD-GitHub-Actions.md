@@ -33,7 +33,7 @@ name: Deploy to AWS
 on:
   push:
     branches: [main]
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch: # Manual trigger
 
 env:
   AWS_REGION: ap-south-1
@@ -41,7 +41,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15
@@ -130,23 +130,23 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
           cd ~/job-queue-system
-          
+
           # Pull latest code
           git pull origin main
-          
+
           # Install dependencies
           pnpm install --prod
-          
+
           # Run migrations
           export DATABASE_URL="${{ secrets.DATABASE_URL }}"
           pnpm --filter database run migrate:prod || true
-          
+
           # Rebuild dashboard if needed
           pnpm --filter dashboard run build || true
-          
+
           # Restart services
           pm2 restart api worker
-          
+
           # Check health
           sleep 5
           pm2 logs --lines 5
@@ -428,6 +428,7 @@ Require:
 ```
 
 This ensures:
+
 - Tests pass before deploying
 - No failing code reaches production
 - Safer deployments

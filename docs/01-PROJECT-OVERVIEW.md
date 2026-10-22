@@ -49,18 +49,18 @@ This is a **learning project** designed to teach modern backend engineering patt
 
 After building this system, you'll understand:
 
-| Pattern | What You'll Learn |
-|---------|-------------------|
-| **Message Brokers** | How Redis queues work, pub/sub patterns |
-| **Job Scheduling** | Priority queues, delayed jobs, recurring jobs |
-| **Reliability** | Retries, exponential backoff, idempotency |
-| **Failure Handling** | Dead-letter queues, poison pills, graceful degradation |
-| **Concurrency** | Worker pools, backpressure, resource management |
-| **State Management** | Explicit state machines, preventing ambiguous states |
-| **Distributed Systems** | Async communication, eventual consistency |
-| **Observability** | Logging, metrics, tracing, audit trails |
-| **Security** | RBAC, JWT authentication, permission checking |
-| **Architecture** | Monorepo patterns, separation of concerns |
+| Pattern                 | What You'll Learn                                      |
+| ----------------------- | ------------------------------------------------------ |
+| **Message Brokers**     | How Redis queues work, pub/sub patterns                |
+| **Job Scheduling**      | Priority queues, delayed jobs, recurring jobs          |
+| **Reliability**         | Retries, exponential backoff, idempotency              |
+| **Failure Handling**    | Dead-letter queues, poison pills, graceful degradation |
+| **Concurrency**         | Worker pools, backpressure, resource management        |
+| **State Management**    | Explicit state machines, preventing ambiguous states   |
+| **Distributed Systems** | Async communication, eventual consistency              |
+| **Observability**       | Logging, metrics, tracing, audit trails                |
+| **Security**            | RBAC, JWT authentication, permission checking          |
+| **Architecture**        | Monorepo patterns, separation of concerns              |
 
 ## Scale
 
@@ -126,18 +126,18 @@ The system should handle job types like:
 
 ## Technology Stack at a Glance
 
-| Layer | Technology |
-|-------|------------|
-| **Runtime** | Node.js (current LTS) |
-| **API** | Fastify |
-| **Queue** | BullMQ (Redis-based) |
-| **Database** | PostgreSQL |
-| **ORM** | Prisma |
-| **Frontend** | Angular (current stable) |
-| **Styling** | Tailwind CSS |
-| **Real-time** | Socket.IO |
-| **Testing** | Vitest |
-| **Package Manager** | pnpm |
+| Layer               | Technology               |
+| ------------------- | ------------------------ |
+| **Runtime**         | Node.js (current LTS)    |
+| **API**             | Fastify                  |
+| **Queue**           | BullMQ (Redis-based)     |
+| **Database**        | PostgreSQL               |
+| **ORM**             | Prisma                   |
+| **Frontend**        | Angular (current stable) |
+| **Styling**         | Tailwind CSS             |
+| **Real-time**       | Socket.IO                |
+| **Testing**         | Vitest                   |
+| **Package Manager** | pnpm                     |
 
 See [[TECH-STACK/00-Overview]] for full details.
 
@@ -154,6 +154,7 @@ Worker Service (Node.js) × N
 ```
 
 Three separate processes:
+
 1. **API**: HTTP server for user requests
 2. **Worker**: Job processor (multiple instances)
 3. **Dashboard**: Angular frontend
@@ -163,11 +164,13 @@ See [[02-ARCHITECTURE-OVERVIEW]] for details.
 ## Project Phases
 
 ### Phase 1: Documentation (Current) ✅
+
 - Complete architecture documentation
 - Define all components, APIs, patterns
 - Create Obsidian vault structure
 
 ### Phase 2: Implementation
+
 - Set up monorepo and packages
 - Build API service
 - Build worker service
@@ -175,12 +178,14 @@ See [[02-ARCHITECTURE-OVERVIEW]] for details.
 - Integrate all components
 
 ### Phase 3: Testing
+
 - Unit tests for each module
 - Integration tests for APIs
 - End-to-end testing
 - Load testing
 
 ### Phase 4: Polish
+
 - Error handling refinements
 - Performance optimization
 - Documentation and comments

@@ -15,6 +15,7 @@ Retry immediately (1ms)
 ```
 
 **Issues**:
+
 1. **Thundering Herd**: All retries hit the system simultaneously
 2. **Wasted Resources**: Retrying immediately when issue hasn't resolved
 3. **Cascading Failures**: One failing job brings down other services
@@ -31,6 +32,7 @@ Attempt 4: Fails → Move to DLQ
 ```
 
 **Benefits**:
+
 1. Gives transient issues time to resolve
 2. Spreads retries over time (no thundering herd)
 3. Saves resources
@@ -44,13 +46,13 @@ Attempt 4: Fails → Move to DLQ
 function calculateBackoff(attemptNumber: number): number {
   // Base delay: 2^attemptNumber seconds (convert to ms)
   const baseDelay = Math.pow(2, attemptNumber) * 1000;
-  
+
   // Add jitter (±20% randomness) to avoid thundering herd
   const jitter = baseDelay * (Math.random() - 0.5) * 0.4;
-  
+
   // Cap at 1 hour max
   const maxDelay = 60 * 60 * 1000;
-  
+
   return Math.min(baseDelay + jitter, maxDelay);
 }
 
@@ -186,13 +188,13 @@ export const sendEmailHandler: JobHandler = {
 function calculateBackoff(attempt: number, maxDelayMs = 3600000): number {
   // Exponential: 2^attempt
   const baseDelay = Math.pow(2, attempt) * 1000;
-  
+
   // Add jitter
   const jitter = baseDelay * (Math.random() - 0.5) * 0.4;
-  
+
   // Cap at maximum
   const totalDelay = baseDelay + jitter;
-  
+
   return Math.min(totalDelay, maxDelayMs);
 }
 
@@ -211,7 +213,7 @@ Track retry patterns:
 
 ```sql
 -- How many jobs are being retried?
-SELECT 
+SELECT
   type,
   COUNT(*) as retrying
 FROM jobs
@@ -220,7 +222,7 @@ WHERE status = 'delayed'
 GROUP BY type;
 
 -- Which job types retry most?
-SELECT 
+SELECT
   type,
   AVG(retryCount) as avg_retries,
   MAX(retryCount) as max_retries
@@ -235,24 +237,22 @@ ORDER BY avg_retries DESC;
 ```typescript
 describe('Exponential Backoff', () => {
   it('calculates correct delays', () => {
-    expect(calculateBackoff(0)).toBeLessThan(2000);    // ~1s
-    expect(calculateBackoff(1)).toBeLessThan(6000);    // ~4s
-    expect(calculateBackoff(2)).toBeLessThan(20000);   // ~16s
+    expect(calculateBackoff(0)).toBeLessThan(2000); // ~1s
+    expect(calculateBackoff(1)).toBeLessThan(6000); // ~4s
+    expect(calculateBackoff(2)).toBeLessThan(20000); // ~16s
   });
 
   it('adds jitter', () => {
-    const delays = Array.from({ length: 100 }, () => 
-      calculateBackoff(1)
-    );
-    
+    const delays = Array.from({ length: 100 }, () => calculateBackoff(1));
+
     // All different (jitter applied)
     const unique = new Set(delays);
     expect(unique.size).toBeGreaterThan(1);
-    
+
     // But all in expected range
-    delays.forEach(d => {
-      expect(d).toBeGreaterThan(3200);   // 4s * 0.8
-      expect(d).toBeLessThan(4800);      // 4s * 1.2
+    delays.forEach((d) => {
+      expect(d).toBeGreaterThan(3200); // 4s * 0.8
+      expect(d).toBeLessThan(4800); // 4s * 1.2
     });
   });
 
@@ -287,13 +287,13 @@ Without backoff: Would've hammered SMTP 100+ times in same period
 
 ## Comparison: Strategies
 
-| Strategy | Pro | Con |
-|----------|-----|-----|
-| **No retry** | Simple | Loses transient failures |
-| **Immediate retry** | Fast recovery | Thundering herd, wastes resources |
-| **Fixed backoff** (1s every time) | Simple | Can miss recovery window |
-| **Exponential backoff** | Adaptive, spreads load | Longer wait times initially |
-| **Exponential + jitter** | ✅ Best overall | Slightly more complex |
+| Strategy                          | Pro                    | Con                               |
+| --------------------------------- | ---------------------- | --------------------------------- |
+| **No retry**                      | Simple                 | Loses transient failures          |
+| **Immediate retry**               | Fast recovery          | Thundering herd, wastes resources |
+| **Fixed backoff** (1s every time) | Simple                 | Can miss recovery window          |
+| **Exponential backoff**           | Adaptive, spreads load | Longer wait times initially       |
+| **Exponential + jitter**          | ✅ Best overall        | Slightly more complex             |
 
 ## Interview Question
 

@@ -6,18 +6,18 @@ This system implements **10 fundamental patterns** used in distributed systems, 
 
 ## Quick Reference
 
-| # | Pattern | Problem Solved | Example |
-|---|---------|------------------|---------|
-| 1 | [[PATTERNS/01-Idempotency]] | Duplicate processing | Webhook fires twice, both create same job |
-| 2 | [[PATTERNS/02-Exponential-Backoff]] | Retry storms | Retry with 1s, 4s, 16s delays (not constant) |
-| 3 | [[PATTERNS/03-Dead-Letter-Queue]] | Poison pills | Failed job moved to DLQ for manual review |
-| 4 | [[PATTERNS/04-State-Machine]] | Ambiguous states | Explicit job states prevent bugs |
-| 5 | [[PATTERNS/05-Concurrency-Backpressure]] | System overload | Workers process N jobs parallel, not infinite |
-| 6 | [[PATTERNS/06-Audit-Trail]] | Compliance & debugging | Immutable history of every attempt |
-| 7 | [[PATTERNS/07-Redis-vs-PostgreSQL]] | Performance + durability | Fast queue + durable history |
-| 8 | [[PATTERNS/08-RBAC]] | Security | Admin can do everything, users see own jobs |
-| 9 | [[PATTERNS/09-Real-Time-Updates]] | User experience | WebSocket shows progress without polling |
-| 10 | [[PATTERNS/10-Graceful-Shutdown]] | Clean restarts | Workers finish jobs before stopping |
+| #   | Pattern                                  | Problem Solved           | Example                                       |
+| --- | ---------------------------------------- | ------------------------ | --------------------------------------------- |
+| 1   | [[PATTERNS/01-Idempotency]]              | Duplicate processing     | Webhook fires twice, both create same job     |
+| 2   | [[PATTERNS/02-Exponential-Backoff]]      | Retry storms             | Retry with 1s, 4s, 16s delays (not constant)  |
+| 3   | [[PATTERNS/03-Dead-Letter-Queue]]        | Poison pills             | Failed job moved to DLQ for manual review     |
+| 4   | [[PATTERNS/04-State-Machine]]            | Ambiguous states         | Explicit job states prevent bugs              |
+| 5   | [[PATTERNS/05-Concurrency-Backpressure]] | System overload          | Workers process N jobs parallel, not infinite |
+| 6   | [[PATTERNS/06-Audit-Trail]]              | Compliance & debugging   | Immutable history of every attempt            |
+| 7   | [[PATTERNS/07-Redis-vs-PostgreSQL]]      | Performance + durability | Fast queue + durable history                  |
+| 8   | [[PATTERNS/08-RBAC]]                     | Security                 | Admin can do everything, users see own jobs   |
+| 9   | [[PATTERNS/09-Real-Time-Updates]]        | User experience          | WebSocket shows progress without polling      |
+| 10  | [[PATTERNS/10-Graceful-Shutdown]]        | Clean restarts           | Workers finish jobs before stopping           |
 
 ## Pattern Dependency Graph
 
@@ -54,21 +54,25 @@ UX Patterns:
 ## Learning Path
 
 ### Day 1: Foundations
+
 1. **State Machine** - Understand explicit states
 2. **RBAC** - Permission model
 3. **Audit Trail** - Immutable history
 
 ### Day 2: Reliability
+
 4. **Idempotency** - Duplicate safety
 5. **Exponential Backoff** - Smart retries
 6. **Dead Letter Queue** - Poison pill handling
 
 ### Day 3: Infrastructure
+
 7. **Concurrency & Backpressure** - System protection
 8. **Redis vs PostgreSQL** - Separation of concerns
 9. **Graceful Shutdown** - Clean operations
 
 ### Day 4: Polish
+
 10. **Real-Time Updates** - User experience
 
 ## Pattern Descriptions (Short)
@@ -80,6 +84,7 @@ UX Patterns:
 **Solution**: Attach idempotency key. Same key = same result, no side effects.
 
 **Example**:
+
 ```
 First request:  POST /jobs with idempotencyKey='stripe-evt-123' → Creates job
 Retry request:  POST /jobs with idempotencyKey='stripe-evt-123' → Returns existing job
@@ -96,6 +101,7 @@ Retry request:  POST /jobs with idempotencyKey='stripe-evt-123' → Returns exis
 **Solution**: Wait longer each time: 1s, 4s, 16s, 64s...
 
 **Example**:
+
 ```
 Attempt 1: Fails → wait 1s
 Attempt 2: Fails → wait 4s (2^2)
@@ -114,6 +120,7 @@ Attempt 4: Fails → move to DLQ
 **Solution**: Move to dead-letter queue for manual inspection.
 
 **Example**:
+
 ```
 After 3 retries fail:
   Move to DLQ
@@ -133,6 +140,7 @@ After 3 retries fail:
 **Solution**: Explicit states with valid transitions.
 
 **Example**:
+
 ```
 queued → active → completed ✅
   ↓
@@ -152,6 +160,7 @@ failed → (if retries left) delayed → queued (loop back)
 **Solution**: Workers process N jobs in parallel. Queue naturally throttles.
 
 **Example**:
+
 ```
 Worker concurrency = 5
 10,000 jobs available
@@ -170,6 +179,7 @@ Rest wait in queue (doesn't load into memory)
 **Solution**: Immutable history of every attempt (append-only).
 
 **Example**:
+
 ```
 job_executions (never updated):
   - attempt 1: failed, error = 'Timeout', duration = 2s
@@ -188,6 +198,7 @@ job_executions (never updated):
 **Solution**: Separate concerns. Redis owns active state. PostgreSQL owns history.
 
 **Example**:
+
 ```
 Redis:       Active queues (who's waiting/processing?)
 PostgreSQL:  History (what happened?)
@@ -207,6 +218,7 @@ If PostgreSQL crashes → queue still works, flush to DB later
 **Solution**: Role-based permissions (admin vs user).
 
 **Example**:
+
 ```
 Admin:  Can view all jobs, retry any, manage DLQ
 User:   Can only see own jobs, retry own failures
@@ -223,6 +235,7 @@ User:   Can only see own jobs, retry own failures
 **Solution**: WebSocket subscriptions. Server pushes updates.
 
 **Example**:
+
 ```
 User sees job submitted
 WebSocket receives: job:started (worker picked it up)
@@ -242,6 +255,7 @@ All without page refresh
 **Solution**: On SIGTERM, finish current jobs (timeout: 30s) then exit.
 
 **Example**:
+
 ```
 Worker receives SIGTERM
   Stop accepting new jobs

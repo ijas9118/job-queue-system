@@ -64,13 +64,13 @@ Heavy Load:
 
 ## Benefits
 
-| Benefit | How |
-|---------|-----|
-| **Memory safe** | Don't load all jobs into memory |
-| **Prevents overload** | Queue throttles naturally |
-| **Fair processing** | Each job gets turn |
-| **Resource efficient** | Use only needed resources |
-| **Scalable** | Add workers as load increases |
+| Benefit                | How                             |
+| ---------------------- | ------------------------------- |
+| **Memory safe**        | Don't load all jobs into memory |
+| **Prevents overload**  | Queue throttles naturally       |
+| **Fair processing**    | Each job gets turn              |
+| **Resource efficient** | Use only needed resources       |
+| **Scalable**           | Add workers as load increases   |
 
 ## Testing
 
@@ -80,19 +80,19 @@ describe('Backpressure', () => {
     const queue = new JobQueue({ concurrency: 2 });
     let processing = 0;
     let maxConcurrent = 0;
-    
+
     queue.process(async (job) => {
       processing++;
       maxConcurrent = Math.max(maxConcurrent, processing);
       await sleep(100);
       processing--;
     });
-    
+
     // Submit 10 jobs
     for (let i = 0; i < 10; i++) {
       await queue.add({ id: i });
     }
-    
+
     // Should never process more than 2 at once
     expect(maxConcurrent).toBeLessThanOrEqual(2);
   });
