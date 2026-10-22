@@ -28,26 +28,82 @@ git clone <repo>
 cd job-queue-system
 pnpm install
 
-# 2. Start services (includes PostgreSQL, Redis, API, Worker)
-docker-compose up
+# 2. Start stateful services (PostgreSQL, Redis, Mailpit in containers)
+docker-compose up -d
 
-# 3. In another terminal, run migrations
-pnpm --filter database run migrate:dev
+# 3. In another terminal, start the API (runs on your machine with hot reload)
+pnpm dev:api
 
-# 4. Open dashboard
-open http://localhost:3001
+# 4. In another terminal, start the worker
+pnpm --filter worker run dev
 
-# That's it! System is running locally
+# API ready at http://localhost:3000
+# Mailpit web UI at http://localhost:8025
 ```
 
 ### What's Running?
 
+**In Docker Containers:**
+
 ```
-PostgreSQL:3432     Data storage
-Redis:6379          Queue broker
-API:3000            Job submission & management
-Worker:             Processing jobs
-Dashboard:3001      Web UI
+PostgreSQL:5432    Data storage
+Redis:6379         Queue broker
+Mailpit:1025       SMTP mail testing (web UI: 8025)
+```
+
+**On Your Machine:**
+
+```
+API:3000           Job submission & management (hot reload)
+Worker:            Processing jobs (hot reload)
+```
+
+## Docker Compose Configuration
+
+The `docker-compose.yml` includes three stateful services:
+
+### PostgreSQL
+
+- **Image**: `postgres:17.0-alpine` (pinned version)
+- **Volume**: Named volume `postgres_data` persists database across restarts
+- **Healthcheck**: Uses `pg_isready` to ensure database is healthy
+- **Credentials**: Read from `.env` file (copy `.env.example` to `.env`)
+
+### Redis
+
+- **Image**: `redis:7.2-alpine` (pinned version)
+- **Settings**:
+  - `appendonly yes` — Persistence enabled for durability
+  - `maxmemory-policy noeviction` — BullMQ requires this for production-like behavior
+- **Volume**: Named volume `redis_data` preserves data across restarts
+- **Healthcheck**: Uses `redis-cli ping` to verify connectivity
+
+### Mailpit
+
+- **Image**: `axllent/mailpit:v1.20` (pinned version)
+- **Ports**: SMTP on 1025, Web UI on 8025
+- **Web UI**: Access at http://localhost:8025 to view captured emails
+
+## Managing Docker Services
+
+```bash
+# Start all services
+docker-compose up
+
+# Start in background
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+
+# Remove volumes (WARNING: deletes data)
+docker-compose down -v
+
+# Check service health
+docker-compose ps
 ```
 
 ## Manual Start (Without Docker)
@@ -167,7 +223,7 @@ Angular doesn't read `.env` files — config is baked in at build time (see [[DE
 ```typescript
 export const environment = {
   apiUrl: 'http://localhost:3000',
-  wsUrl: 'ws://localhost:3000'
+  wsUrl: 'ws://localhost:3000',
 };
 ```
 

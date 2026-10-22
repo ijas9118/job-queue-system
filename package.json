@@ -2,19 +2,40 @@
   "name": "job-queue-system",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Distributed job queue system",
   "packageManager": "pnpm@10.18.3",
   "engines": {
-    "node": ">=20"
+    "node": ">=22",
+    "pnpm": ">=10.18.3"
   },
   "scripts": {
+    "prepare": "husky install",
     "dev": "pnpm -r --parallel run dev",
     "dev:api": "pnpm --filter api run dev",
     "build": "pnpm -r run build",
-    "test": "pnpm -r run test",
-    "lint": "pnpm -r run lint"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "typescript": "^5.7.0"
+    "@types/node": "^22.0.0",
+    "@eslint/js": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.13.0",
+    "@typescript-eslint/parser": "^8.13.0",
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^9.1.0",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3",
+    "typescript": "^5.7.2",
+    "vitest": "^2.0.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx}": "eslint --fix",
+    "*.{js,ts,jsx,tsx,json,md}": "prettier --write"
   }
 }
