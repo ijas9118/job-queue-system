@@ -43,6 +43,9 @@ pnpm --filter api run build
 - Commit messages: [Conventional Commits](https://www.conventionalcommits.org/),
   **all lowercase** (including the subject), no trailing period.
   Example: `feat: scaffold pnpm workspace and fastify api app`
-- **Never add a `Co-Authored-By` trailer** to commit messages in this repo.
+- **Do not add trailers like `Co-Authored-By:` to any commit messages.** Commit
+  attribution in this repo is tracked via git history, not trailers. Any work on
+  this repo—whether by humans, Claude, or other agents—should commit with the
+  standard git user without message trailers.
 - Follow existing patterns in `apps/api` when adding new apps/packages
   (factory function for app setup, routes as Fastify plugins, tests in `__tests__/`).

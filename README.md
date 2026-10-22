@@ -15,19 +15,14 @@ A distributed job queue system built with TypeScript, Fastify, BullMQ, PostgreSQ
 pnpm install
 
 # 2. Start stateful services (Postgres, Redis, Mailpit)
-docker-compose up -d
-
-# 3. Run the API server in watch mode
-pnpm dev:api
+docker compose up -d
 ```
 
-The API will be available at `http://localhost:3000`.
+The API, Worker, and Dashboard apps arrive in M3. For now, stateful services are ready at:
 
-In another terminal, start the worker:
-
-```bash
-pnpm --filter worker run dev
-```
+- PostgreSQL: `localhost:5432`
+- Redis: `localhost:6379`
+- Mailpit: `http://localhost:8025` (email testing)
 
 ## Documentation
 
@@ -39,12 +34,19 @@ pnpm --filter worker run dev
 
 ## Commands
 
-- `pnpm dev` — Run all apps in watch mode
-- `pnpm dev:api` — Run API server with hot reload
+**Workspace & Packages (available now):**
+
 - `pnpm build` — Build all packages
 - `pnpm test` — Run all tests
 - `pnpm lint` — Lint all code
 - `pnpm format` — Format all code
+
+**Apps (available in M3):**
+
+- `pnpm dev` — Run all apps in watch mode
+- `pnpm dev:api` — Run API server with hot reload
+- `pnpm dev:worker` — Run worker with hot reload
+- `pnpm dev:dashboard` — Run dashboard with hot reload
 
 ## Project Structure
 
